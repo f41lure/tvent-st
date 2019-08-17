@@ -1,0 +1,15 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Deleted
+{% endblock %}
+
+{% block main %}
+    <h1>File deleted.</h1>
+    <form action="{{ url_for('deletem') }}" method="post">
+            <div class="form-group">
+                <button class="btn btn-default" type="submit">Go Back</button>
+            </div>
+    </form>
+
+{% endblock %}

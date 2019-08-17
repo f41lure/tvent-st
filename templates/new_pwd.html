@@ -1,0 +1,21 @@
+{% extends "layout.html" %}
+{% block title %}
+    Change Password
+{% endblock %}
+
+{% block main %}
+    <form action="{{ url_for('change') }}" method="post">
+        <fieldset>
+
+            <div class="form-group">
+                <input class="form-control" name="curr_passwd" placeholder="Current Password" type="password"/>
+            </div>
+            <div class="form-group">
+                <input class="form-control" name="new_passwd" placeholder="New Password" type="password"/>
+            </div>
+            <div class="form-group">
+                <button class="btn btn-default" type="submit">Save</button>
+            </div>
+        </fieldset>
+    </form>
+{% endblock %}

@@ -1,0 +1,30 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Open
+{% endblock %}
+
+{% block main %}
+    <form action="{{ url_for('message') }}" method="post">
+        <div class="entrybox">
+            <textarea class="textbox" name="body" style="height:20px;
+                                                            width:1050px;
+                                                            font-family: Verdana, Tahoma, Arial, Helvetica, sans-serif;
+                                                            font-size: 82%;
+                                                            overflow:scroll
+                                                            resize:none;"></textarea>
+        <div class="form-group">
+                <button class="btn btn-default" type="submit" name="button" value="postComment">Post</button>
+    </form>
+    <br>
+    <br>
+    <h4><pre>Previous messages</pre></h4>
+    <br>
+    </table>
+    {% for i in range(messages.__len__()) %}
+        <td>{{  messages[i]["from_"]  }}</td><br>
+        <td>{{ messages[i]["body"] }} on {{  messages[i]["time"]  }}</td>
+        <br>
+        <br>
+    {% endfor %}
+{% endblock %}

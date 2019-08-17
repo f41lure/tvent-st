@@ -1,0 +1,7 @@
+.entry {
+    height:800px;
+    width:800px;
+    font-family: Verdana, Tahoma, Arial, Helvetica, sans-serif;
+    font-size: 82%;
+    overflow:scroll;
+}

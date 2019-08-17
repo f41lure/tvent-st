@@ -1,0 +1,29 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Index
+{% endblock %}
+
+{% block main %}
+    <h2>User {{ username }}</h2><br>
+    <h6>last seen {{  data[0][6]  }}</h6>
+    <h6>joined on {{  data[0][5]  }}</h6>
+    <br>
+    <h5>About:<br>{{ bio }}</h5>
+
+    {% if username == curr_username %}
+        <a href="/edit"><input type="button" value="Edit"></a>
+    {% endif %}
+    {% if username != curr_username %}
+        <a href="{{url_for('message', from=curr_username, to=username)}}">Talk</a>
+    {% endif %}
+    <br><br>
+  <h3><pre>This user's posts:
+</pre></h3>
+    {% for i in range(posts.__len__()) %}
+        <h3>{{ posts[i][0] }}</h3>
+        <h5>{{ posts[i][1] }}</h5>
+        <br>
+    {% endfor %}
+
+{% endblock %}

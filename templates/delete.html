@@ -1,0 +1,21 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Delete
+{% endblock %}
+
+{% block main %}
+    <h1>Enter the name of the blog entry to delete.</h1>
+    <form action="{{ url_for('delete') }}" method="post">
+        <fieldset>
+            </div>
+            <div class="form-group">
+                <input class="form-control" name="f" placeholder="Please be sure to include the '.txt' part and exact capitals and symbols." type={{file}}/>
+            </div>
+            <div class="form-group">
+                <button class="btn btn-default" type="submit">Delete</button>
+            </div>
+        </fieldset>
+    </form>
+
+{% endblock %}
