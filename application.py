@@ -8,13 +8,10 @@
 # the owner said I had a low effort name and pfp
 # I guess I do
 
-from flask import Flask, flash, redirect, render_template, request, session, url_for
+from flask import *
 from flask_session import Session
 from passlib.apps import custom_app_context as pwd_context
 from tempfile import mkdtemp
-import re
-import uuid
-import sqlite3
 from helpers import *
 from pathlib import Path
 from cryptography.fernet import Fernet
@@ -22,6 +19,10 @@ from datetime import datetime
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 from flask_debug import Debug
 from flask_debugtoolbar import DebugToolbarExtension
+from flask_misaka import Misaka
+import re
+import uuid
+import sqlite3
 
 # configure application
 app = Flask(__name__)
@@ -30,22 +31,16 @@ app = Flask(__name__)
 app.config["SESSION_FILE_DIR"] = mkdtemp()
 app.config["SESSION_PERMANENT"] = False
 app.config["SESSION_TYPE"] = "filesystem"
+app.config['SECRET_KEY'] = '8086'
 app.debug = True
 Session(app)
-
-app.config['SECRET_KEY'] = '8086'
-
-#toolbar = DebugToolbarExtension(app)
-
+Misaka(app)
 
 conn = sqlite3.connect("/home/8bitRebellion/tvent/tvent3.6/flask-blog/workspace/blog/app.db")
-
 analyzer = SentimentIntensityAnalyzer()
-
 global curr_id
 
 @app.route("/", methods=["GET", "POST"])
-@login_required
 def index():
     if request.method == "POST":
         if request.form['qtag']:
@@ -54,63 +49,76 @@ def index():
             exe = "SELECT * FROM posts WHERE tag={}".format(sanitize(str(request.form.get("tag"))))
             app.logger.info(exe)
             posts = db.execute(exe).fetchall()
-            curr_user = db.execute(("""SELECT username FROM users WHERE id={}""".format(sanitize(session["user_id"])))).fetchall()[0][0]
+            try:
+                curr_user = db.execute(("""SELECT username FROM users WHERE id=?""", [session["user_id"]])).fetchall()[0][0]
+            except:
+                pass
             conn.commit()
             return render_template("index.html", posts=posts, user=curr_user)                  # The link bypasses directly to the actual page
 
     elif request.method == "GET":
         db = conn.cursor()
+        all_posts = db.execute("""SELECT * FROM posts WHERE ishidden = '1'""").fetchall()
+        app.logger.info(all_posts)
+        all_posts = db.execute("""SELECT * FROM posts""").fetchall()
+        app.logger.info(all_posts)
         # data = db.execute("""SELECT * FROM entries WHERE id = :id""", id=session["user_id"])
         if request.args.get('sort') == "new":
             all_posts = db.execute("""SELECT * FROM posts""").fetchall()
-            print(all_posts)
-            curr_user = db.execute(("""SELECT username FROM users WHERE id={}""".format(sanitize(session["user_id"])))).fetchall()[0][0]
-            app.logger.info(list(reversed(list(all_posts))))
-            conn.commit()
+            if "user_id" in session:
+                exe = """SELECT username FROM users WHERE id = ?"""
+                curr_user = db.execute(exe, [session["user_id"]]).fetchall()[0][0]
+            else:
+                curr_user = 'anon'
+            app.logger.info(curr_user)
             return render_template("index.html", posts=list(reversed(list(all_posts))), user=curr_user)            #TODO FIX THIS
         elif request.args.get('sort') == "old":
             all_posts = db.execute("""SELECT * FROM posts""").fetchall()
-            exe = """SELECT username FROM users WHERE id={}""".format(session["user_id"])
-            curr_user = db.execute(exe).fetchone()[0][0]
-            # ^ get username to pass as url parameter for profile() in case user
-            # accesses their profile
-            conn.commit()
+            if "user_id" in session:
+                exe = """SELECT username FROM users WHERE id=?"""
+                curr_user = db.execute(exe, [session["user_id"]]).fetchone()[0][0]
+                # ^ get username to pass as url parameter for profile() in case user
+                # accesses their profile
+            else:
+                curr_user = 'anon'
+            app.logger.info(curr_user)
             return render_template("index.html", posts=all_posts, user=curr_user)
         else:
             all_posts = db.execute("""SELECT * FROM posts""").fetchall()
-            file = open("/home/8bitRebellion/tvent/tvent3.6/flask-blog/workspace/blog/log.txt", "w+")
-            strb = """SELECT username FROM users WHERE id={}""".format('{}'.format(session["user_id"]))
-            #app.logger.info("User data: {}".format(strb))
-            file.write(strb)
-            file.close()
-            curr_user = db.execute(strb).fetchall()[0][0]
+            if "user_id" in session:
+                exe = """SELECT username FROM users WHERE id = ?"""
+                curr_user = db.execute(exe, [session["user_id"]]).fetchall()[0][0]
+                # ^ get username to pass as url parameter for profile() in case user
+                # accesses their profile
+            else:
+                curr_user = 'anon'
             app.logger.info(curr_user)
-            # ^ get username to pass as url parameter for profile() in case user
-            # accesses their profile
             return render_template("index.html", posts=all_posts, user=curr_user)
 
 
 
 
 @app.route("/open_file", methods=["GET", "POST"])
-@login_required
 def open_file():
-    global a
+    global postId
     global post_data
     global comments
     global sent
+    global username
     if request.method == "GET":
         db = conn.cursor()
+        try:
+            exe = """SELECT * FROM users WHERE id = {}""".format(sanitize(session["user_id"]))
+            user_data = db.execute(exe).fetchall()
+            username = user_data[0][1]
+        except:
+            username = 'anon'
 
-        a = str(request.args.get('type'))            # dishes up the post using the URL parameter
-        exe = """SELECT * FROM users WHERE id = {}""".format(sanitize(session["user_id"]))
-        user_data = db.execute(exe).fetchall()
-        username = user_data[0][1]
-
-        exe = """SELECT * FROM posts WHERE id = {}""".format(sanitize(a))
+        postId = str(request.args.get('type'))           # dishes up the post using the URL parameter
+        exe = """SELECT * FROM posts WHERE id = {}""".format(sanitize(postId))
         post_data = db.execute(exe).fetchall()
 
-        exe = """SELECT * FROM comments WHERE post_id = {}""".format(sanitize(a))
+        exe = """SELECT * FROM comments WHERE post_id = {}""".format(sanitize(postId))
         #app.logger.info("comments: {}".format(exe))
         comments = db.execute(exe).fetchall()
 
@@ -121,6 +129,7 @@ def open_file():
 
     elif request.method == "POST":
         db = conn.cursor()
+        app.logger.info(request.form)
         if request.form['button'] == 'postComment':                                             # if the users presses the comment button
             comment_id = str(uuid.uuid4())
             exe = """SELECT * FROM users WHERE id={}""".format(sanitize(session["user_id"]))
@@ -131,16 +140,21 @@ def open_file():
                     sanitize(session["user_id"]),\
                     sanitize(user_data[0][1]),\
                     sanitize(request.form.get("comment")),\
-                    sanitize(a),\
+                    sanitize(postId),\
                     sanitize(datetime.utcnow()))
+            app.logger.info(exe)
             db.execute(exe)
 
-            exe = """SELECT * FROM comments WHERE post_id = {}""".format(sanitize(a))
+            exe = """SELECT * FROM comments WHERE post_id = {}""".format(sanitize(postId))
             comments = db.execute(exe).fetchall()
-
+            app.logger.info(comments)
             conn.commit()
-            return render_template("open.html", post=post_data, comments=comments, sent=sent)
-        elif request.form['button'] == 'editPost':                                              # link in template bypasses this to the editPost route
+            return render_template("open.html", post=post_data, comments=comments, sent=sent, curr_username=username)
+        elif request.form['button'] == 'delete':
+            db.execute("""DELETE FROM posts WHERE id={}""".format(sanitize(postId)))
+            conn.commit()
+            return redirect(url_for('index'))
+        else:
             pass
 
 
@@ -177,8 +191,33 @@ def new_entry():
         print(sentiment)
         post_id = str(uuid.uuid4())                                                             # Creates a unique id
         name = str(request.form.get("name"))
-
-        exe = """INSERT INTO posts (id, user_id, user, title, body, time, sentiment, tag)
+        app.logger.info(flatten(request.form))
+        #app.logger.info('isanon' in dict(request.form).get('opt'))
+        try:
+            if ('isanon' in dict(request.form).get('opt')) == True:
+                exe = """INSERT INTO posts (id, user_id, user, title, body, time, sentiment, tag, isanon)
+                        VALUES ({}, {}, {}, {}, {}, {}, {}, {}, {})""".format(sanitize(post_id),
+                        sanitize(session["user_id"]),
+                        sanitize(username),
+                        sanitize(name),
+                        sanitize(text),
+                        sanitize(datetime.utcnow()),
+                        sanitize(sentiment),
+                        sanitize(str(request.form.get("tag"))),
+                        sanitize('1'))
+            elif ('ishidden' in dict(request.form).get('opt')) == True:
+                exe = """INSERT INTO posts (id, user_id, user, title, body, time, sentiment, tag, ishidden)
+                        VALUES ({}, {}, {}, {}, {}, {}, {}, {}, {})""".format(sanitize(post_id),
+                        sanitize(session["user_id"]),
+                        sanitize(username),
+                        sanitize(name),
+                        sanitize(text),
+                        sanitize(datetime.utcnow()),
+                        sanitize(sentiment),
+                        sanitize(str(request.form.get("tag"))),
+                        sanitize('1'))
+        except:
+            exe = """INSERT INTO posts (id, user_id, user, title, body, time, sentiment, tag)
                     VALUES ({}, {}, {}, {}, {}, {}, {}, {})""".format(sanitize(post_id),
                     sanitize(session["user_id"]),
                     sanitize(username),
@@ -248,6 +287,19 @@ def edit():
         conn.commit()
         return redirect(url_for("index"))
 
+@app.route("/ban", methods=["GET", "POST"])
+@login_required
+@admin_only
+def ban():
+    """BAN A USER"""
+    db = conn.cursor()
+    if request.method == "POST":
+        user = request.form.get("user")
+        db.execute("UPDATE users SET isbanned={} WHERE username={}".format(1, sanitize(user)))
+        conn.commit()
+        return redirect(url_for("index"))
+    else:
+        return render_template("ban.html")
 
 @app.route("/message", methods=["GET", "POST"])
 @login_required
@@ -255,17 +307,18 @@ def message():
     global par_from
     global par_to
     global channel_id
+    db = conn.cursor()
     if request.method == "GET":
         par_from = request.args.get("from")
         par_to = request.args.get("to")
-        data = db.execute("""SELECT * FROM messages WHERE channel<>'' AND (from_={} AND to_={}) OR (from_={} AND to_={})""".format(par_from, par_to, par_from, par_to))              # needs to be fixed as the if part will always run
+        data = db.execute("""SELECT * FROM messages WHERE channel<>'' AND (from_={} AND to_={}) OR (from_={} AND to_={})""".format(par_from, par_to, par_from, par_to)).fetchall()              # needs to be fixed as the if part will always run
         if not data:
             channel_id = str(uuid.uuid4())
             #db.execute("""INSERT INTO messages (channel) VALUES (:channelId)""", channelId=channel_id)
             return render_template("message.html")
         else:
             channel_id = data[0]["channel"]
-            messages = db.execute("""SELECT * FROM messages WHERE channel=:channelId""", channelId=channel_id)
+            messages = db.execute("""SELECT * FROM messages WHERE channel=?""", [channel_id])
             return render_template("message.html", messages=messages)
     elif request.method == "POST":
         message = request.form.get("body")
@@ -370,28 +423,33 @@ def login():
 
         # ensure username was submitted
         if not request.form.get("username"):
-            return apology("must provide username")
+            return apology(200, "must provide username")
 
         # ensure password was submitted
         elif not request.form.get("password"):
-            return apology("must provide password")
+            return apology(200, "must provide password")
 
         str = "SELECT * FROM users WHERE username = {}".format(sanitize(request.form.get("username")))
         # query database for username
         rows = db.execute(str).fetchall()
-
+        app.logger.info(rows)
+        if rows[0][8] == 1:
+            return apology("fuck off you're banned bitch", 69420)
         # ensure username exists and password is correct
         if len(rows) != 1 or not pwd_context.verify(request.form.get("password"), rows[0][2]):
             return apology("invalid username and/or password")
 
         # remember which user has logged in
         session["user_id"] = rows[0][0]
+        session["username"] = rows[0][1]
+        session["perms"] = rows[0][7]
 
         curr_id = session["user_id"]
         str = """UPDATE users SET seen={} WHERE id={}""".format(sanitize(datetime.utcnow()), sanitize(session['user_id']))
         db.execute(str)
         # redirect user to home page
         conn.commit()
+        app.logger.info("ATTENTION, {}, perms {}".format(session['username'], session['perms']))
         return redirect(url_for("index"))
 
     # else if user reached route via GET (as by clicking a link or via redirect)
@@ -406,9 +464,8 @@ def logout():
     # forget any user_id
     session.clear()
 
-
     # redirect user to login form
-    return redirect(url_for("login"))
+    return redirect(url_for("index"))
 
 
 
@@ -451,12 +508,36 @@ def about():
     elif request.method == "POST":
         return redirect(url_for("index"))
 
+################################################################################
+###       A            PPPPPPPPPP        IIIIIIIIIIIII                         #
+###      A A           P         P             I                               #
+###     A   A          P         P             I                               #
+###    A     A         PPPPPPPPPP              I                               #
+###   AAAAAAAAA        P                       I                               #
+###  A         A       P                       I                               #
+### A           A      P                       I                               #
+###A             A     P                 IIIIIIIIIIIII                         #
+################################################################################
 
 
-# @app.route("/download", methods=["GET", "POST"])
-# @login_required
-# def download():
-#     user_data = db.execute("""SELECT * FROM users WHERE id = :id""", id=session["user_id"])
-#     username = user_data[0]["username"]
-#     path = str("~/workspace/secrets/" + str(username) + '/')
-#     return send_from_directory(directory=path, filename="How do I check whether a file exists?.txt")
+@app.route('/api/v1/info/<user>', methods=['GET'])
+def API_get_user(user):
+    db = conn.cursor()
+    exe = "SELECT id, username, created, seen, bio FROM users WHERE username=?"
+    q = db.execute(exe, [user]).fetchall()
+    if len(user) == 0:
+        abort(404)
+    return jsonify(q)
+
+@app.route('/api/v1/posts/<user>', methods=['GET'])
+def API_get_posts(user):
+    db = conn.cursor()
+    exe = "SELECT * FROM posts WHERE user=?"
+    q = db.execute(exe, [user]).fetchall()
+    if len(user) == 0:
+        abort(404)
+    return jsonify(q)
+
+
+# Extra shit
+

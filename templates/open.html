@@ -5,15 +5,26 @@
 {% endblock %}
 
 {% block main %}
-    {% if post[0][5] == curr_username %}
-        <a href="{{url_for('editPost', type=post[0][4])}}" name="button" value="editPost">Edit</a>
-    {% endif %}
 
+    {% if post[0][5] == curr_username %}
+        <form>
+            <a href="{{url_for('editPost', type=post[0][4])}}" name="editPost" value="editPost">edit</a>
+        </form>
+    {% endif %}
+    {% if post[0][5] == curr_username %}
+        <form action="{{ url_for('open_file') }}" method="post">
+           <button name="button" type='submit' value="delete">delete</button>
+        </form>
+    {% endif %}
 
     <!--<form action="{{ url_for('open_file') }}" method="post">-->
         <!--<button class="btn btn-default" type="submit">Delete Post</button>-->
         <pre><h2>{{ post[0][2] }}</h2></pre>
-        <pre><h4>OP: <a href="{{url_for('profile', type=(post[0][5]))}}">{{ post[0][5] }}</a></h6></pre>
+        {%  if post[0][8] == 1  %}
+            <pre><h4>OP: anon</h6></pre>
+        {%  else  %}
+            <pre><h4>OP: <a href="{{url_for('profile', type=(post[0][5]))}}">{{ post[0][5] }}</a></h6></pre>
+        {%  endif  %}
         <pre><h6>created {{  post[0][1]  }}</h6></pre>
         {%  if sent > 0  %}
             <font style="color: #008000" size="3"><h6>Sentiment: {{sent}}</h6></font>
@@ -28,23 +39,28 @@
                                                 font-size: 82%;
                                                 overflow:scroll;
                                                 wrap=hard">{{ post[0][3] }}</textarea>-->
-        {{  post[0][3]  }}
+        {{  post[0][3]|markdown  }}
 
         <br>
         <p>tags: {{  post[0][7]  }}</p>
         <br>
         <br>
-        <div class="entrybox">
-            <textarea placeholder="post a comment" class="textbox" name="comment" style="height:40px;
+        <form action="{{ url_for('open_file') }}" method="post">
+            <fieldset>
+            <div class="entrybox">
+                <textarea placeholder="post a comment" class="textbox" name="comment" style="height:40px;
                                                             width:800px;
                                                             font-family: Verdana, Tahoma, Arial, Helvetica, sans-serif;
                                                             font-size: 82%;
                                                             overflow:scroll
                                                             resize:none;"></textarea>
-        <div class="form-group">
-            <form action="{{ url_for('open_file') }}" method="post">
-                <button class="btn btn-default" type="submit" name="button" value="postComment">Post</button>
-            </form>
+            </div>
+            <div class="form-group">
+
+                <button class="btn btn-default" type='submit' name="button" value="postComment">Post</button>
+            </div>
+            </fieldset>
+        </form>
     <!--</form>-->
     <br>
     <br>

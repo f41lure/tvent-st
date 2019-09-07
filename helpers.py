@@ -1,12 +1,13 @@
 import csv
 import os
 import urllib.request
-
+import sqlite3
 from flask import redirect, render_template, request, session
 from functools import wraps
 
+conn = sqlite3.connect("/home/8bitRebellion/tvent/tvent3.6/flask-blog/workspace/blog/app.db")
 
-def apology(message, code=400):
+def apology(message, code):
     """Render message as an apology to user."""
     def escape(s):
         """
@@ -33,7 +34,14 @@ def login_required(f):
     return decorated_function
 
 def sanitize(a):
-    b = "'" + str(a) + "'"
+    b = ''
+    a = str(a)
+    for char in a:
+        if char == "'":
+            b = b + '\\\\' + char           #requires two slashes but need to escape those for python
+        else:
+            b = b + char
+    b = "'" + str(b) + "'"
     return b
 
 def sanitize_t(a):
@@ -48,3 +56,21 @@ def shag(a):
         b.append(i)
     return b
 
+def flatten(a):
+    flat_list = ''
+    for sublist in a:
+        for elem in list(sublist):
+            flat_list += str(elem)
+    return(flat_list)
+
+def admin_only(f):
+    """
+    for admin only routes
+    http://flask.pocoo.org/docs/0.12/patterns/viewdecorators/
+    """
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if session.get("perms") != "admin":
+            return apology("Sorry you aren't an elite hacker like myself", 69420)
+        return f(*args, **kwargs)
+    return decorated_function

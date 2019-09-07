@@ -12,7 +12,7 @@
         <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.2/css/bootstrap.min.css" rel="stylesheet"/>
 
         <link href="styles.css" rel="stylesheet"/>
-        <link rel="icon" type="image/png" href="favicon-32x32.png" sizes="32x32" />
+        <link rel="icon" type="image/png" href="templates/favicon-32x32.png" sizes="32x32" />
         <script src="https://code.jquery.com/jquery-3.1.1.min.js"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.3/umd/popper.min.js"></script>
         <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.2/js/bootstrap.min.js"></script>
@@ -90,24 +90,30 @@
             <div class="collapse navbar-collapse" id="navbar">
                 {% if session.user_id %}
                     <ul class="navbar-nav mr-auto mt-2">
-                        <li class="nav-item"><a class="nav-link" href="/new_entry">New Post</a></li>
+                        <li class="nav-item"><a class="nav-link" href="/new_entry">new post</a></li>
                         <li class="nav-item"><a class="nav-link" href="/email">HYPERlinks</a></li>
-                        <li class="nav-item"><a class="nav-link" href="/about">Click here</a></li>
-                        <li class="nav-item"><a class="nav-link" href="/users">Retard List</a></li>
+                        <li class="nav-item"><a class="nav-link" href="/about">click here</a></li>
+                        <li class="nav-item"><a class="nav-link" href="/users">retard list</a></li>
 
                     </ul>
                     <ul class="navbar-nav ml-auto mt-2">
-                        <li class="nav-item"><a class="nav-link" href="/logout">Log Out</a></li>
+                        <li class="nav-item"><a class="nav-link" href="/logout">log out</a></li>
                     </ul>
                 {% else %}
+                    <ul class="navbar-nav mr-auto mt-2">
+                        <li class="nav-item"><a class="nav-link" href="/">landing</a></li>
+                    </ul>
                     <ul class="navbar-nav ml-auto mt-2">
-                        <li class="nav-item"><a class="nav-link" href="/register">Register</a></li>
-                        <li class="nav-item"><a class="nav-link" href="/login">Log In</a></li>
+                        <li class="nav-item"><a class="nav-link" href="/register">sign up to do other shit</a></li>
+                        <li class="nav-item"><a class="nav-link" href="/login">log in</a></li>
                     </ul>
                 {% endif %}
             </div>
         </nav>
 
+        <footer>
+            fuck urself
+        </footer>
         {% if get_flashed_messages() %}
             <header>
                 <div class="alert alert-primary border text-center" role="alert">
