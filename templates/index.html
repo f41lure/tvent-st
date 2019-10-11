@@ -10,11 +10,12 @@
     </form>
     <br>
     <!--<h5><a href="{{url_for('index')}}" type="button" method="post" value="new">new</a></h5>-->
-    <font size="3"><a href="{{url_for('index', sort='new')}}"><input type="button" value="new"></a></font>
+    <!--<div id="sort" align="right">-->
+    <p value="p">sort by:</p>&nbsp;
+    <font size="3"><a href="{{url_for('index', sort='new')}}"><input type="button" value="new"></a></font>&ensp;
     <font size="3"><a href="{{url_for('index', sort='old')}}"><input type="button" value="old"></a></font>
-    <font align=left margin-left=900 size="3"><a href="{{url_for('profile', type=user)}}"><input type="button" value="profile"></a></font>
-
-    <br>
+    <font align=right margin-left=900 size="3"><a href="{{url_for('profile', type=user)}}"><input style="float: right;" type="button" value="profile"></a></font>
+    <br><br>
     {% for i in range(posts.__len__()) %}
         {% if posts[i][2] %}
             <td><a href="{{url_for('open_file', type=(posts[i][4]))}}">{{ posts[i][2] }}</a></td>

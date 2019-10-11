@@ -4,15 +4,16 @@
 
     <head>
 
-        <!-- Required meta tags -->
+
         <meta charset="utf-8"/>
         <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no"/>
 
         <!-- documentation at http://getbootstrap.com/docs/4.0/, alternative themes at https://bootswatch.com/4-alpha/ -->
         <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.2/css/bootstrap.min.css" rel="stylesheet"/>
 
-        <link href="styles.css" rel="stylesheet"/>
-        <link rel="icon" type="image/png" href="templates/favicon-32x32.png" sizes="32x32" />
+        <!--<link href="styles.css" rel="stylesheet"/>-->
+        <link href="https://fonts.googleapis.com/css?family=Open+Sans&display=swap" rel="stylesheet">
+        <link rel="icon" type="image/png" href="https://i.ibb.co/kGTwWgQ/Logo-Makr-4-Xc15e.png" sizes="32x32" />
         <script src="https://code.jquery.com/jquery-3.1.1.min.js"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.3/umd/popper.min.js"></script>
         <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.2/js/bootstrap.min.js"></script>
@@ -33,6 +34,13 @@
                 background-color: #000000;
             }
 
+            /*p, h5, h6, pre{
+                font-family: 'Open Sans', sans-serif;
+            }*/
+
+            /*h1, h2, h3, h4{
+                font-family: "Arial Black";
+            }*/
 
             /* colors for brand */
             nav .navbar-brand .blue
@@ -52,23 +60,51 @@
                 color: #2e944b;
             }
 
-            main .form-control
+            /*main .form-control
             {
                 center form controls
                 display: inline-block;
 
                  override Bootstrap's 100% width for form controls
                 width: auto;
-            }
+            }*/
 
             /*main
             {
-                /* scroll horizontally as needed
+                * scroll horizontally as needed
                 overflow-x: auto;
 
-                /* center contents
+                * center contents
                 text-align: center;
-            } */
+            }*/
+
+            input[type=button]{
+                display: inline-block;
+                font-weight: 400;
+                text-align: center;
+                white-space: nowrap;
+                vertical-align: middle;
+                -webkit-user-select: none;
+                -moz-user-select: none;
+                -ms-user-select: none;
+                user-select: none;
+                border: 1px solid transparent;
+                padding: .375rem .75rem;
+                font-size: 1rem;
+                line-height: 1;
+                border-radius: 1rem;
+                background-color: orange;
+                transition: all 150ms ease-out;
+            }
+            input[type=button]:focus, input[type=button]:hover{
+			    color: orange;
+			    background-color: black;
+            }
+
+            input[type=button]:active{
+			    color: black;
+			    background-color: white;
+            }
 
             main img
             {
@@ -76,7 +112,43 @@
                 max-width: 100%;
             }
 
+            textarea {
+    display: block;
+    width: 100%;
+    padding: .375rem .75rem;
+    font-size: 1rem;
+    color: #495057;
+    background-color: #fff;
+    background-image: none;
+    background-clip: padding-box;
+    border: 1px solid #ced4da;
+    border-radius: .25rem;
+    transition: border-color ease-in-out .15s,box-shadow ease-in-out .15s;
+            }
 
+
+            textarea:focus {
+                background: none repeat scroll 0 0 #FFFFFF;
+                outline-width: 0;
+            }
+
+            #sort{
+
+                text-align: center;
+            }
+            input[value=profile]{
+                float: right;
+            }
+            input[value=new], input[value=old], p[value=p]{
+                float: left;
+                display: flex;
+            }
+            #navbar{
+                color: #000000;
+            }
+            p[value=p]{
+                margin-right: 1;
+            }
         </style>
     </head>
 
@@ -97,6 +169,9 @@
 
                     </ul>
                     <ul class="navbar-nav ml-auto mt-2">
+                        {% if session.perms == "admin" %}
+                            <li class="nav-item"><a class="nav-link" href="/admin">admin panel</a></li>
+                        {% endif %}
                         <li class="nav-item"><a class="nav-link" href="/logout">log out</a></li>
                     </ul>
                 {% else %}
@@ -111,9 +186,7 @@
             </div>
         </nav>
 
-        <footer>
-            fuck urself
-        </footer>
+
         {% if get_flashed_messages() %}
             <header>
                 <div class="alert alert-primary border text-center" role="alert">
@@ -125,7 +198,6 @@
         <main class="container p-5">
             {% block main %}{% endblock %}
         </main>
-
     </body>
 
 </html>

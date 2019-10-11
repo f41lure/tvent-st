@@ -9,8 +9,8 @@
         <fieldset>
 
             <div class="entrybox">
-                <textarea class="textbox" name="entry" style="height:80px;
-                                                                width:1050px;
+                <textarea class="textbox" name="entry" style="height:400px;
+
                                                                 font-family: Verdana, Tahoma, Arial, Helvetica, sans-serif;
                                                                 font-size: 82%;
                                                                 overflow:scroll
@@ -22,10 +22,10 @@
             <div class="form-group">
                 <input class="form-control" name="tag" placeholder="Tag (optional)" type="text"/>
             </div>
-            <div class="form-group">
+            <div class="form-group" autocomplete="off">
                 <label>anonymous <input type="checkbox" name="opt" value="isanon" checked></label>
             </div>
-            <div class="form-group">
+            <div class="form-group" autocomplete="off">
                 <label>hidden <input type="checkbox" name="opt" value="ishidden" checked></label>
             </div>
             <div class="form-group">
@@ -33,4 +33,15 @@
             </div>
         </fieldset>
     </form>
+    <br><br><hr>
+    <h1>Guide to Markdown</h1>
+    <br>
+    <h3>Headings</h3>
+    <p>prepend any text with hashes to make them headings.</p>
+    <p>html h1: #</p>
+    <p>html h2: ##</p>
+    <p>html h3: ###</p>
+    <p>html h4: ####</p>
+    <p>html h5: #####</p>
+    <p>html h6: ######</p>
 {% endblock %}

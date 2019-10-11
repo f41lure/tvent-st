@@ -7,13 +7,13 @@
     <link href="new_style_entry.css" rel="stylesheet"/>
     <form action="{{ url_for('edit') }}" method="post">
         <fieldset>
-
+            <input class="form-control" name="pfp" placeholder="pfp" type="text"/>
             <div class="entrybox">
                 <textarea class="textbox" name="bio" style="height:80px;
                                                                 width:120px;
                                                                 font-family: Verdana, Tahoma, Arial, Helvetica, sans-serif;
                                                                 font-size: 82%;
-                                                                overflow:scroll;" placeholder="{{ curr_bio }}"></textarea>
+                                                                overflow:scroll;" placeholder="Something about you">{{curr_bio}}</textarea>
             </div>
             <div class="form-group">
                 <button class="btn btn-default" type="submit">Save</button>

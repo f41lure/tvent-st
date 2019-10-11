@@ -52,7 +52,7 @@ def index():
             try:
                 curr_user = db.execute(("""SELECT username FROM users WHERE id=?""", [session["user_id"]])).fetchall()[0][0]
             except:
-                pass
+                curr_user = "anon"
             conn.commit()
             return render_template("index.html", posts=posts, user=curr_user)                  # The link bypasses directly to the actual page
 
@@ -130,26 +130,36 @@ def open_file():
     elif request.method == "POST":
         db = conn.cursor()
         app.logger.info(request.form)
-        if request.form['button'] == 'postComment':                                             # if the users presses the comment button
-            comment_id = str(uuid.uuid4())
-            exe = """SELECT * FROM users WHERE id={}""".format(sanitize(session["user_id"]))
+        if request.form['button'] == 'postComment':         # if the users presses the comment button
+            try:
+                if "user_id" not in session:
+                    user_id = 0
+                    username = "anon"
+                else:
+                    user_id = session["user_id"]
+                    comment_id = str(uuid.uuid4())
+                    exe = """SELECT * FROM users WHERE id={}""".format(sanitize(session["user_id"]))
+                    user_data = db.execute(exe).fetchall()
+                    username = user_data[0][1]
 
-            user_data = db.execute(exe).fetchall()
-            exe = """INSERT INTO comments (comment_id, user_id, username, body, post_id, time)
-                    VALUES ({}, {}, {}, {}, {}, {})""".format(sanitize(comment_id),\
-                    sanitize(session["user_id"]),\
-                    sanitize(user_data[0][1]),\
-                    sanitize(request.form.get("comment")),\
-                    sanitize(postId),\
-                    sanitize(datetime.utcnow()))
-            app.logger.info(exe)
-            db.execute(exe)
+                comment_id = str(uuid.uuid4())
+                exe = """INSERT INTO comments (comment_id, user_id, username, body, post_id, time)
+                        VALUES ({}, {}, {}, {}, {}, {})""".format(sanitize(comment_id),\
+                        sanitize(user_id),\
+                        sanitize(username),\
+                        sanitize(request.form.get("comment")),\
+                        sanitize(postId),\
+                        sanitize(datetime.utcnow()))
+                app.logger.info(exe)
+                db.execute(exe)
 
-            exe = """SELECT * FROM comments WHERE post_id = {}""".format(sanitize(postId))
-            comments = db.execute(exe).fetchall()
-            app.logger.info(comments)
-            conn.commit()
-            return render_template("open.html", post=post_data, comments=comments, sent=sent, curr_username=username)
+                exe = """SELECT * FROM comments WHERE post_id = {}""".format(sanitize(postId))
+                comments = db.execute(exe).fetchall()
+                app.logger.info(comments)
+                conn.commit()
+                return render_template("open.html", post=post_data, comments=comments, sent=sent, curr_username=username)
+            except:
+                return redirect(url_for("login"))
         elif request.form['button'] == 'delete':
             db.execute("""DELETE FROM posts WHERE id={}""".format(sanitize(postId)))
             conn.commit()
@@ -168,6 +178,10 @@ def editPost():
         return render_template("editPost.html")
     elif request.method == "POST":
         db = conn.cursor()
+        net = db.execute("SELECT user_id FROM POSTS WHERE id=?", [param]).fetchall()
+        app.logger.info("{}, {}".format(int(sanitize_t(net[0])), session["user_id"]))
+        if int(sanitize_t(net[0])) != session["user_id"]:
+            return apology("You fell victim to one of the classic blunders!", 14)
         exe = """UPDATE posts SET body={} WHERE id={}""".format(sanitize(request.form.get("entry")), sanitize(param))
         db.execute(exe)
         conn.commit()
@@ -195,16 +209,28 @@ def new_entry():
         #app.logger.info('isanon' in dict(request.form).get('opt'))
         try:
             if ('isanon' in dict(request.form).get('opt')) == True:
-                exe = """INSERT INTO posts (id, user_id, user, title, body, time, sentiment, tag, isanon)
-                        VALUES ({}, {}, {}, {}, {}, {}, {}, {}, {})""".format(sanitize(post_id),
-                        sanitize(session["user_id"]),
-                        sanitize(username),
-                        sanitize(name),
-                        sanitize(text),
-                        sanitize(datetime.utcnow()),
-                        sanitize(sentiment),
-                        sanitize(str(request.form.get("tag"))),
-                        sanitize('1'))
+                cock = [post_id,
+                        session["user_id"],
+                        username,
+                        name,
+                        text,
+                        datetime.utcnow(),
+                        sentiment,
+                        str(request.form.get("tag")),
+                        '1']
+                #exe = """INSERT INTO posts (id, user_id, user, title, body, time, sentiment, tag, isanon)
+                        #VALUES ({}, {}, {}, {}, {}, {}, {}, {}, {})""".format(sanitize(post_id),
+                        #sanitize(session["user_id"]),
+                        #sanitize(username),
+                        #sanitize(name),
+                        #sanitize(text),
+                        #sanitize(datetime.utcnow()),
+                        #sanitize(sentiment),
+                        #sanitize(str(request.form.get("tag"))),
+                        #sanitize('1'))
+                db.execute("""INSERT INTO posts (id, user_id, user, title, body, time, sentiment, tag, isanon)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""", cock)
+
             elif ('ishidden' in dict(request.form).get('opt')) == True:
                 exe = """INSERT INTO posts (id, user_id, user, title, body, time, sentiment, tag, ishidden)
                         VALUES ({}, {}, {}, {}, {}, {}, {}, {}, {})""".format(sanitize(post_id),
@@ -217,17 +243,17 @@ def new_entry():
                         sanitize(str(request.form.get("tag"))),
                         sanitize('1'))
         except:
-            exe = """INSERT INTO posts (id, user_id, user, title, body, time, sentiment, tag)
-                    VALUES ({}, {}, {}, {}, {}, {}, {}, {})""".format(sanitize(post_id),
-                    sanitize(session["user_id"]),
-                    sanitize(username),
-                    sanitize(name),
-                    sanitize(text),
-                    sanitize(datetime.utcnow()),
-                    sanitize(sentiment),
-                    sanitize(str(request.form.get("tag"))))
+            cock = [post_id,
+                    session["user_id"],
+                    username,
+                    name,
+                    text,
+                    datetime.utcnow(),
+                    sentiment,
+                    str(request.form.get("tag"))]
+            db.execute("""INSERT INTO posts (id, user_id, user, title, body, time, sentiment, tag)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)""", cock)
         app.logger.info(exe)
-        db.execute(exe)
 
         conn.commit()
         return redirect(url_for("index"))
@@ -248,7 +274,7 @@ def profile():
         your_username = db.execute(exe).fetchall()[0][0]
         # ^ username of the user logged in rn in order to give permissions for editing profile
 
-        exe = """SELECT title, body FROM posts WHERE user = {}""".format(sanitize(prof_username))
+        exe = """SELECT * FROM posts WHERE user = {}""".format(sanitize(prof_username))
         app.logger.info(exe)
         posts = db.execute(exe).fetchall()
 
@@ -257,12 +283,33 @@ def profile():
         bioEx = db.execute(exe).fetchall()
         app.logger.info(bioEx)
         data = bioEx
+        app.logger.info(data[0][9])
         bio = str(bioEx[0][4])
         print(your_username, prof_username)
         return render_template("profile.html", posts=posts, bio=bio, data=data, username=prof_username, curr_username=your_username)
     elif request.method == "POST":
         # return redirect(url_for("edit"))
         pass
+
+@app.route("/chat", methods=["GET", "POST"])
+@login_required
+def chat():
+    """Them fags be chatting"""
+    db = conn.cursor()
+    global channel
+    if request.method == "GET":
+        exe = "SELECT * FROM chats WHERE to=? AND from=?"
+        to = str(request.args.get("user"))
+        from_ = session["user_id"]
+        q = db.execute(exe, [request.args.get("user"), session["user_id"]]).fetchall()
+        if not q:
+            channel = str(uuid.uuid4())
+            exe = "INSERT INTO chats (channel, to, from) VALUES (?)"
+            db.execute(exe, [channel, request.args.get("user"), session["user_id"]])
+        else:
+            channel = str(q[0][0])
+        return render_template("chat.html", channel=channel, to=to, from_=from_)
+
 
 
 
@@ -272,26 +319,34 @@ def edit():
     """Allow a user to edit their bio"""
     if request.method == "GET":
         db = conn.cursor()
-        exe = """SELECT bio FROM users WHERE id = {}""".format(sanitize(session["user_id"]))
+        exe = """SELECT bio, pfp FROM users WHERE id = {}""".format(sanitize(session["user_id"]))
         curr_bioEx = db.execute(exe).fetchall()                                                #Get users current bio
         curr_bio = str(curr_bioEx[0][0])
+        pfp = str(curr_bioEx[0][1])
 
         conn.commit()
-        return render_template("profile_edit.html", curr_bio=curr_bio)
+        return render_template("profile_edit.html", curr_bio=curr_bio, pfp=pfp)
     elif request.method == "POST":
         db = conn.cursor()
         new_bio = str(request.form.get("bio"))
-        exe = "UPDATE users SET bio={} WHERE id={}".format(sanitize(new_bio), sanitize(session["user_id"]))
-        db.execute(exe)                                                 #Updates bio
+        pfp = str(request.form.get("pfp"))
+        db.execute("UPDATE users SET bio={}, pfp={} WHERE id={}".format(sanitize(new_bio), sanitize(pfp), sanitize(session["user_id"])))
+        #db.execute(exe)                                                 #Updates bio
 
         conn.commit()
         return redirect(url_for("index"))
+
+@app.route("/admin", methods=["GET", "POST"])
+@admin_only
+def admin():
+    if request.method == "GET":
+        return render_template("admin.html")
 
 @app.route("/ban", methods=["GET", "POST"])
 @login_required
 @admin_only
 def ban():
-    """BAN A USER"""
+    """Ban a user"""
     db = conn.cursor()
     if request.method == "POST":
         user = request.form.get("user")
@@ -423,11 +478,11 @@ def login():
 
         # ensure username was submitted
         if not request.form.get("username"):
-            return apology(200, "must provide username")
+            return apology("enter the username you absolute cement-head", 200)
 
         # ensure password was submitted
         elif not request.form.get("password"):
-            return apology(200, "must provide password")
+            return apology("enter the password retard", 200)
 
         str = "SELECT * FROM users WHERE username = {}".format(sanitize(request.form.get("username")))
         # query database for username
@@ -437,7 +492,7 @@ def login():
             return apology("fuck off you're banned bitch", 69420)
         # ensure username exists and password is correct
         if len(rows) != 1 or not pwd_context.verify(request.form.get("password"), rows[0][2]):
-            return apology("invalid username and/or password")
+            return apology("wrong username or password probs", 80085)
 
         # remember which user has logged in
         session["user_id"] = rows[0][0]
@@ -477,12 +532,13 @@ def register():
             return apology("retry", 400)
 
         db = conn.cursor()
-        str = "INSERT INTO users (username, hash, email, created, perms) VALUES({}, {}, {}, {}, {})".format(\
+        str = "INSERT INTO users (username, hash, email, created, perms, isbanned) VALUES({}, {}, {}, {}, {}, {})".format(\
                              sanitize(request.form.get("username")), \
                              sanitize(pwd_context.hash(request.form.get("password"))), \
                              sanitize(request.form.get("email")),
                              sanitize(datetime.utcnow()),
-                             sanitize("peasant"))
+                             sanitize("peasant"),
+                             sanitize("0"))
         # insert the new user into users, storing the hash of the user's password
         result = db.execute(str).fetchall()
         conn.commit()
@@ -537,6 +593,38 @@ def API_get_posts(user):
     if len(user) == 0:
         abort(404)
     return jsonify(q)
+
+@app.route('/api/chat/messages/<channel>', methods=['GET'])
+def API_get_messages(channel):
+    db = conn.cursor()
+    exe = "SELECT * FROM chats WHERE channel=?"
+    q = db.execute(exe, [channel]).fetchall()
+    app.logger.info(db.execute("SELECT * FROM chats").fetchall())
+    if not q:
+        app.logger.info("lower")
+        channel = str(uuid.uuid4())
+        exe = "INSERT INTO chats (channel) VALUES (?)"
+        db.execute(exe, [channel])
+    conn.commit()
+
+    return jsonify(q)
+
+@app.route('/api/chat/messages/add', methods=["POST"])
+def API_chat_add():
+    #channel, to, from, body
+    db = conn.cursor()
+    try:
+        channel = request.args.get("channel")
+        to = request.args.get("to")
+        from_ = request.args.get("from")
+        body = request.args.get("body")
+        exe = "INSERT INTO chats (channel, to, from, body) VALUES (?, ?, ?, ?)"
+
+        db.execute(exe, [channel, to, from_, body])
+        conn.commit()
+    except:
+        abort(404)
+
 
 
 # Extra shit

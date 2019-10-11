@@ -13,7 +13,7 @@
     {% endif %}
     {% if post[0][5] == curr_username %}
         <form action="{{ url_for('open_file') }}" method="post">
-           <button name="button" type='submit' value="delete">delete</button>
+           <button name='button' type='submit' value="delete">delete</button>
         </form>
     {% endif %}
 

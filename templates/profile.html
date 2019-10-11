@@ -9,6 +9,7 @@
     <h6>last seen {{  data[0][6]  }}</h6>
     <h6>joined on {{  data[0][5]  }}</h6>
     <br>
+    <img src={{data[0][9]}} alt="welp" width='52' height='52'>
     <h5>About:<br>{{ bio }}</h5>
 
     {% if username == curr_username %}
@@ -21,8 +22,9 @@
   <h3><pre>This user's posts:
 </pre></h3>
     {% for i in range(posts.__len__()) %}
-        <h3>{{ posts[i][0] }}</h3>
-        <h5>{{ posts[i][1] }}</h5>
+        <td><a href="{{url_for('open_file', type=(posts[i][4]))}}">{{ posts[i][2] }}</a></td>
+        <br>
+        <td>{{ (posts[i][3])[0:30] ~ '...' }}</td>
         <br>
     {% endfor %}
 

@@ -4,6 +4,14 @@ import urllib.request
 import sqlite3
 from flask import redirect, render_template, request, session
 from functools import wraps
+import smtplib, ssl
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+
+port = 465  # For SSL
+smtp_server = "smtp.gmail.com"
+sender_email = "8depr69@gmail.com"  # Enter your address
+password = "porsche911gt3rs4.0"
 
 conn = sqlite3.connect("/home/8bitRebellion/tvent/tvent3.6/flask-blog/workspace/blog/app.db")
 
@@ -74,3 +82,39 @@ def admin_only(f):
             return apology("Sorry you aren't an elite hacker like myself", 69420)
         return f(*args, **kwargs)
     return decorated_function
+
+def welcome(email, name):
+    message = MIMEMultipart("alternative")
+    message["Subject"] = "Welcome and thank you for joining, whatever your name is"
+    message["From"] = sender_email
+    message["To"] = email
+
+    text = """\
+    Hi,
+    Firstly, I'd like to personally thank you for joining my shitty site, really means a lot.
+    Secondly, FUCKING INTERACT WITH ME PLEASEEEEEEEEEEE.
+    Post an intro or something
+    http://8bitrebellion.pythonanywhere.com"""
+    html = """\
+    <html>
+        <body>
+            <p>Hi,<br>
+            Secondly, FUCKING INTERACT WITH ME PLEASEEEEEEEEEEE.<br>
+            Firstly, I'd like to personally thank you for joining my shitty site, really means a lot.<br>
+            Post an intro or something<br>
+
+            <a href="http://8bitrebellion.pythonanywhere.com">To the site</a>
+            </p>
+        </body>
+    </html>
+    """
+    part1 = MIMEText(text, "plain")
+    part2 = MIMEText(html, "html")
+
+    message.attach(part1)
+    message.attach(part2)
+
+    context = ssl.create_default_context()
+    with smtplib.SMTP_SSL(smtp_server, port, context=context) as server:
+        server.login(sender_email, password)
+        server.sendmail(sender_email, email, message.as_string())
