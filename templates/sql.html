@@ -1,23 +1,23 @@
 {% extends "layout.html" %}
 {% block title %}
-    Edit
+    sql
 {% endblock %}
 
 {% block main %}
-    <link href="new_style_entry.css" rel="stylesheet"/>
-    <form action="{{ url_for('editPost') }}" method="post">
+    <form action="{{ url_for('sql') }}" method="post">
         <fieldset>
 
             <div class="entrybox">
-                <textarea class="textbox" name="entry" style="height:400px;
+                <textarea class="textbox" name="sql" style="height:400px;
                                                                 font-family: Verdana, Tahoma, Arial, Helvetica, sans-serif;
                                                                 font-size: 82%;
                                                                 overflow:scroll
-                                                                wrap=hard;">{{text}}</textarea>
+                                                                wrap=hard;"></textarea>
             </div>
             <div class="form-group">
-                <button class="btn btn-default" type="submit">Save</button>
+                <button class="btn btn-default" type="submit">query</button>
             </div>
         </fieldset>
     </form>
+
 {% endblock %}

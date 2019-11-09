@@ -5,9 +5,12 @@
 
 {% block main %}
     <link href="new_style_entry.css" rel="stylesheet"/>
-    <form action="{{ url_for('edit') }}" method="post">
+    <form action="{{ url_for('edit') }}" enctype="multipart/form-data" method="post">
         <fieldset>
-            <input class="form-control" name="pfp" placeholder="pfp" type="text"/>
+            <label for="file" class="custom-file-upload">
+                choose a pfp
+            </label>
+            <input id="file" name="file" type="file"/>
             <div class="entrybox">
                 <textarea class="textbox" name="bio" style="height:80px;
                                                                 width:120px;

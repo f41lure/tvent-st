@@ -11,7 +11,7 @@
             <a href="{{url_for('editPost', type=post[0][4])}}" name="editPost" value="editPost">edit</a>
         </form>
     {% endif %}
-    {% if post[0][5] == curr_username %}
+    {% if post[0][5] == curr_username or session.perms == 'admin'%}
         <form action="{{ url_for('open_file') }}" method="post">
            <button name='button' type='submit' value="delete">delete</button>
         </form>
@@ -19,17 +19,17 @@
 
     <!--<form action="{{ url_for('open_file') }}" method="post">-->
         <!--<button class="btn btn-default" type="submit">Delete Post</button>-->
-        <pre><h2>{{ post[0][2] }}</h2></pre>
+        <h2>{{ post[0][2] }}</h2>
         {%  if post[0][8] == 1  %}
-            <pre><h4>OP: anon</h6></pre>
+            <h6>OP: anon</h6>
         {%  else  %}
-            <pre><h4>OP: <a href="{{url_for('profile', type=(post[0][5]))}}">{{ post[0][5] }}</a></h6></pre>
+            <h6>OP: <a href="{{url_for('profile', user=(post[0][5]))}}">{{ post[0][5] }}</a></h6>
         {%  endif  %}
-        <pre><h6>created {{  post[0][1]  }}</h6></pre>
+            <h6>created {{  moment(post[0][1]).format('MMMM Do YYYY, h:mm:ss a') }}</h6>
         {%  if sent > 0  %}
-            <font style="color: #008000" size="3"><h6>Sentiment: {{sent}}</h6></font>
+            <font style="color: #008000" size="3">Sentiment: {{sent}}</font>
         {%  elif sent < 0  %}
-            <font style="color: #FF0000" size="3">Sentiment: {{sent}}</h6></font>
+            <font style="color: #FF0000" size="3">Sentiment: {{sent}}</font>
         {%  endif  %}
         <br>
         <!--<pre>{{ post[0]["body"] }}</pre>-->
@@ -49,9 +49,8 @@
             <fieldset>
             <div class="entrybox">
                 <textarea placeholder="post a comment" class="textbox" name="comment" style="height:40px;
-                                                            width:800px;
                                                             font-family: Verdana, Tahoma, Arial, Helvetica, sans-serif;
-                                                            font-size: 82%;
+                                                            font-size: 100%;
                                                             overflow:scroll
                                                             resize:none;"></textarea>
             </div>
@@ -68,9 +67,9 @@
     <br>
     </table>
     {% for i in range(comments.__len__()) %}
-        <td>{{ comments[i][2] }} on {{  comments[i][4]  }}</td>
+        <td><a href="{{url_for('profile', user=(comments[i][2]))}}">{{ comments[i][2] }}</a> on {{  moment(comments[i][4]).format('MMMM Do YYYY, h:mm:ss a')  }}</td>
         <br>
-        <td>{{ comments[i][3] }}</td>
+        <td>{{ comments[i][3]|markdown }}</td>
         <br>
         <br>
     {% endfor %}

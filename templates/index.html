@@ -5,16 +5,28 @@
 {% endblock %}
 
 {% block main %}
-    <form action="{{ url_for('index') }}" method="post">
-        <input class="form-control" name="tag" placeholder="Tag (optional)" type="text"/><button class="btn btn-default" type="submit" name="qtag" value="qtag">search</button>
+    <style>
+        #indeximg{
+            background-size: 150px;
+            width: 300px;
+            height: auto;
+        }
+    </style>
+    <form action="{{ url_for('index') }}" method="post"><div style=" display:flex;">
+        <input class="form-control" name="tag" placeholder="Tag (optional)" type="text"/>&nbsp;<button class="btn btn-default" type="submit" name="qtag" value="qtag">search</button>
+        </div>
     </form>
     <br>
     <!--<h5><a href="{{url_for('index')}}" type="button" method="post" value="new">new</a></h5>-->
     <!--<div id="sort" align="right">-->
+    <div style="display:flex;">
     <p value="p">sort by:</p>&nbsp;
-    <font size="3"><a href="{{url_for('index', sort='new')}}"><input type="button" value="new"></a></font>&ensp;
-    <font size="3"><a href="{{url_for('index', sort='old')}}"><input type="button" value="old"></a></font>
-    <font align=right margin-left=900 size="3"><a href="{{url_for('profile', type=user)}}"><input style="float: right;" type="button" value="profile"></a></font>
+    <font size="3"><a href="{{url_for('index', sort='new')}}"><input type="button" value="new"></a></font>&nbsp;
+    <font size="3"><a href="{{url_for('index', sort='old')}}"><input type="button" value="old"></a></font></div>
+    <font align=right margin-left=900 size="3"><a href="{{url_for('profile', user=user)}}"><input style="align: right; float: right;" type="button" value="profile"></a></font>
+    {% if unlonely > 0 %}
+        <font align=left margin-right=900 size="3"><a href="{{url_for('notifs', user=user)}}"><input style="align: left; float: left;" type="button" value="notifs"></a></font>
+    {% endif %}
     <br><br>
     {% for i in range(posts.__len__()) %}
         {% if posts[i][2] %}
@@ -23,7 +35,11 @@
             <td><a href="{{url_for('open_file', type=(posts[i][4]))}}">OP is blind.</a></td>
         {% endif %}
          <br>
-        <h6>{{ (posts[i][3])[0:30] ~ '...' }}</h6>
+        {% if (posts[i][3])[1:4] == 'img' %}
+            {{ posts[i][3]|markdown }}
+        {% else %}
+            <h6>{{ (posts[i][3])[0:30] ~ '...' }}</h6>
+        {% endif %}
         <br>
         <br>
         <br>

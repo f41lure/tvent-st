@@ -1,0 +1,53 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    History
+{% endblock %}
+
+{% block main %}
+    <p>Alright so basically, I made this site as a small project to
+    keep me busy on weekends and give me something to do apart from
+    being a sad sack of shit.</p>
+    <p>I based it off a project I completed for Harvard's CS50 (PSet 7
+    for anyone curious), but very little of that base code remains,
+    like at this point the only routes that still somewhat resemble
+    the original are the login, logout, and 404 page. Oh, and the
+    base html/css too, because I can't be assed with writing front-end
+    shit.</p>
+    <p>I originally coded most of the site on Cloud9's ide, which has now
+    sadly been sold to AWS and is behind a paywall. It took a bit of time to
+    transfer all that code to PythonAnywhere, who offer free hosting and make
+    hosting any python based webapp a breeze.</p>
+    <p>The most distinguishing thing about this site is that it was written
+    (haphazardly) in python, chiefly because I couldn't be bothered with learning
+    JavaScript or PHP. The dbm is SQLite3, and while I know that it's slow and
+    not exactly scalable, it suits a tiny piece of shit like this one.</p>
+    <p>Yes, there are a couple of security holes. Some of my queries aren't
+    sanitized, and I'm still working on that. I can't really find any time
+    to work on this with school going on. Some of the features break from time
+    to time, and the front-end is a bit cluttered and shit. Some routes aren't
+    secured either, so anyone can access private info (why am I telling you
+    this).</p>
+    <p>Currently, people can sign up, make posts, edit, delete, and comment on
+    them, get notifications when someone else comments, make posts anonymous or
+    hide them, edit their own profile, message other people, and some other
+    thing I forgot. There's a dark mode too, and a public API, although it doesn't
+    use OAuth and isn't secured.</p>
+    <p>Standardizing dates all across the site was a pain in the ass, but thanks
+    to the absolute legend Miguel Grinberg's wonderful Flask-Moment, it was relatively
+    easier than doing it from scratch. Please note that apart from the Flask-Moment
+    module, this project didn't use anything from Miguel Grinbergs Flask Mega
+    Tutorial.</p>
+    <p>So, you might ask, whats the use of all this?</p>
+    <p>Well, I can't really speak anywhere online without getting inexplicably banned
+    for wildly differing reasons, (I guess people just want to get rid of me), so
+    I decided to create this as a safe space for myself while trying to
+    learn a bit of web dev at the same time. I still didn't learn any
+    web dev and I still don't use this site for anything. I guess
+    it might be time for a new project.</p>
+    <p>I know no-one is ever going to read this, but if you do, please contact me
+    or something by clicking on "CLICK HERE" in the navbar above this.</p>
+    <p>P.S. The reason this is relatively coherent (as compared to other shit
+    I write) is because this was written in a car backseat while listening to
+    shitty music at full blast in lashing rain.</p>
+{% endblock %}

@@ -1,0 +1,23 @@
+{% extends "layout.html" %}
+{% block title %}
+    Notifications
+{% endblock %}
+
+{% block main %}
+    <form action="{{ url_for('notifs') }}" method="post">
+        <fieldset>
+            <div class="form-group">
+                <button class="btn btn-default" value="delete" type="submit">mark posts as read</button>
+            </div>
+    {% for i in range(notifs.__len__()) %}
+        <td><a href="{{url_for('open_file', type=(notifs[i][4]))}}">{{ notifs[i][3] }}</a></td>
+        <br>
+        <td>{{ notifs[i][7] }}</td>
+        <br>
+        <div class="form-group" autocomplete="off">
+            <input type="checkbox" name="opt" value={{  notifs[i][6]  }}>
+        </div>
+    {% endfor %}
+        </fieldset>
+    </form>
+{% endblock %}

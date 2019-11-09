@@ -6,15 +6,15 @@
 
 {% block main %}
     <form action="{{ url_for('message') }}" method="post">
-        <div class="entrybox">
-            <textarea class="textbox" name="body" style="height:20px;
-                                                            width:1050px;
+            <div class="entrybox">
+                <textarea placeholder="say hi!" class="textbox" name="comment" style="height:40px;
                                                             font-family: Verdana, Tahoma, Arial, Helvetica, sans-serif;
-                                                            font-size: 82%;
+                                                            font-size: 100%;
                                                             overflow:scroll
                                                             resize:none;"></textarea>
+            </div>
         <div class="form-group">
-                <button class="btn btn-default" type="submit" name="button" value="postComment">Post</button>
+                <button class="btn btn-default" type="submit" name="button" value="postComment">send</button>
     </form>
     <br>
     <br>
@@ -22,8 +22,8 @@
     <br>
     </table>
     {% for i in range(messages.__len__()) %}
-        <td>{{  messages[i]["from_"]  }}</td><br>
-        <td>{{ messages[i]["body"] }} on {{  messages[i]["time"]  }}</td>
+        <td style="font-size: 80%">{{  messages[i][4]  }} on {{  moment(messages[i][5]).format('MMMM Do YYYY, h:mm:ss a')  }}</td><br>
+        <td><h5>{{ messages[i][1] }}</h5></td>
         <br>
         <br>
     {% endfor %}

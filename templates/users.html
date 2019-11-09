@@ -7,11 +7,7 @@
 {% block main %}
 {% for i in range(users.__len__()) %}
 
-    <td><a href="{{url_for('profile', type=(users[i][1]))}}">{{ users[i][1] }}</a></td>
-    {% if perm == "admin" %}
-        <button class="btn btn-default" type="submit" name="button" value="kill">Kill</button>
-    {% endif %}
-    <br>
+    <td><a href="{{url_for('profile', user=(users[i][1]))}}">{{ users[i][1] }}</a></td>
     <br>
 {% endfor %}
 {% endblock %}

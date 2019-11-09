@@ -5,12 +5,11 @@
 
 {% block main %}
     <link href="new_style_entry.css" rel="stylesheet"/>
-    <form action="{{ url_for('new_entry') }}" method="post">
+    <form action="{{ url_for('new_entry', sort='text') }}" method="post">
         <fieldset>
 
             <div class="entrybox">
                 <textarea class="textbox" name="entry" style="height:400px;
-
                                                                 font-family: Verdana, Tahoma, Arial, Helvetica, sans-serif;
                                                                 font-size: 82%;
                                                                 overflow:scroll
@@ -23,10 +22,10 @@
                 <input class="form-control" name="tag" placeholder="Tag (optional)" type="text"/>
             </div>
             <div class="form-group" autocomplete="off">
-                <label>anonymous <input type="checkbox" name="opt" value="isanon" checked></label>
+                <label>anonymous <input type="checkbox" name="opt" value="isanon"></label>
             </div>
             <div class="form-group" autocomplete="off">
-                <label>hidden <input type="checkbox" name="opt" value="ishidden" checked></label>
+                <label>hidden <input type="checkbox" name="opt2" value="ishidden"></label>
             </div>
             <div class="form-group">
                 <button class="btn btn-default" type="submit">Save</button>

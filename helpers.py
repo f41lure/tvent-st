@@ -7,6 +7,7 @@ from functools import wraps
 import smtplib, ssl
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from datetime import datetime
 
 port = 465  # For SSL
 smtp_server = "smtp.gmail.com"
@@ -83,6 +84,12 @@ def admin_only(f):
         return f(*args, **kwargs)
     return decorated_function
 
+def is_impostor(fren, notfren):
+    if str(fren) != str(notfren):
+        return True
+    else:
+        return False
+
 def welcome(email, name):
     message = MIMEMultipart("alternative")
     message["Subject"] = "Welcome and thank you for joining, whatever your name is"
@@ -118,3 +125,18 @@ def welcome(email, name):
     with smtplib.SMTP_SSL(smtp_server, port, context=context) as server:
         server.login(sender_email, password)
         server.sendmail(sender_email, email, message.as_string())
+def deeplist(x):
+    """fully copies trees of tuples to a tree of lists.
+       deep_list( (1,2,(3,4)) ) returns [1,2,[3,4]]"""
+    a = []
+    for t in x:
+        a.append(list(t))
+    return a
+
+def dated(tupe, idx):
+    """Converts strs into datetime objects for moment.js"""
+    tupe = deeplist(tupe)
+    for i in range(0, len(tupe)): #converts to list and changes all dates to datetime, do the same with the get request
+        #tupe[i][idx] = tupe[i][idx].replace(microsecond=0)
+        tupe[i][idx] = datetime.strptime(tupe[i][idx], '%Y-%m-%d %H:%M:%S.%f')
+    return tupe

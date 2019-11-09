@@ -1,0 +1,31 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Index
+{% endblock %}
+
+{% block main %}
+    <form action="{{ url_for('bulk') }}" method="post">
+        <fieldset>
+    {% for i in range(posts.__len__()) %}
+        {% if posts[i][2] %}
+            <td><a href="{{url_for('open_file', type=(posts[i][4]))}}">{{ posts[i][2] }}</a></td>
+        {% else %}
+            <td><a href="{{url_for('open_file', type=(posts[i][4]))}}">OP is blind.</a></td>
+        {% endif %}
+         <br>
+        <h6>{{ (posts[i][3])[0:30] ~ '...' }}</h6>
+        <br>
+        <div class="form-group" autocomplete="off">
+                <input type="checkbox" name="opt" value={{  posts[i][4]  }}>
+        </div>
+        <br>
+        <br>
+    {% endfor %}
+            <div class="form-group">
+                <button class="btn btn-default" type="submit">delete</button>
+            </div>
+        </fieldset>
+    </form>
+
+{% endblock %}
