@@ -1,0 +1,22 @@
+{% extends "layout.html" %}
+{% block title %}
+    Edit
+{% endblock %}
+
+{% block main %}
+    <form action="{{ url_for('editWiki') }}" method="post">
+        <fieldset>
+
+            <div class="entrybox">
+                <textarea class="textbox" name="entry" style="height:400px;
+                                                                font-family: Verdana, Tahoma, Arial, Helvetica, sans-serif;
+                                                                font-size: 82%;
+                                                                overflow:scroll
+                                                                wrap=hard;">{{ body }}</textarea>
+            </div>
+            <div class="form-group">
+                <button class="btn btn-default" type="submit">Save</button>
+            </div>
+        </fieldset>
+    </form>
+{% endblock %}

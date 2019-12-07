@@ -22,6 +22,7 @@ from flask_debug import Debug
 from flask_debugtoolbar import DebugToolbarExtension
 from flask_misaka import Misaka
 from flask_moment import Moment
+from flask_redis import Redis
 from imgurpython import *
 import re
 import uuid
@@ -31,21 +32,22 @@ import os
 # configure application
 app = Flask(__name__)
 
-# add-ons
+# configure session to use filesystem (instead of signed cookies)
 app.config["SESSION_FILE_DIR"] = mkdtemp()
 app.config["SESSION_PERMANENT"] = False
 app.config["SESSION_TYPE"] = "filesystem"
 app.config['SECRET_KEY'] = '8086'
+#app.config['REDIS_URL'] = "redis://:wE3s9IaalB8z8xR15wMqi2LfNkWPIUOV@redis-11944.c16.us-east-1-2.ec2.cloud.redislabs.com:11944"
 app.debug = True
 Session(app)
 Misaka(app)
 moment = Moment(app)
 
-# extra config
+#Imgur config
 client = ImgurClient("51e7efef3c2b98e", "a297978f3cb883660cc729ead76f80a2634ceaa2")
+
 conn = sqlite3.connect("/home/8bitRebellion/tvent/tvent3.6/flask-blog/workspace/blog/app.db")
 analyzer = SentimentIntensityAnalyzer()
-
 global curr_id
 
 @app.route("/", methods=["GET", "POST"])
@@ -53,7 +55,6 @@ def index():
     if request.method == "POST":
         if request.form['qtag']:
             db = conn.cursor()
-            app.logger.info(request.form)
             exe = "SELECT * FROM posts WHERE tag={}".format(sanitize(str(request.form.get("tag"))))
             app.logger.info(exe)
             posts = db.execute(exe).fetchall()
@@ -160,10 +161,8 @@ def open_file():
                     post_data[0][5],
                     "Someone replyed to a post of yours",
                     postId,
-                    0,
-                    str(uuid.uuid4()),
-                    request.form.get("comment")]
-            db.execute("INSERT INTO notifs (user_id, type, username, body, link, read, id, body2) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", cock)
+                    0]
+            db.execute("INSERT INTO notifs (user_id, type, username, body, link, read) VALUES (?, ?, ?, ?, ?, ?)", cock)
 
             exe = """SELECT comment_id, user_id, username, body, time, post_id, sentiment FROM comments WHERE post_id = {}""".format(sanitize(postId))
             comments = db.execute(exe).fetchall()
@@ -191,7 +190,8 @@ def editPost():
     db = conn.cursor()
     if request.method == "GET":
         param = request.args.get("type")
-        text = db.execute("SELECT * FROM posts WHERE id=?", [param]).fetchall()[0]
+        text = db.execute("SELECT * FROM posts WHERE id=?", [param]).fetchall()[0][3]
+        conn.commit()
         return render_template("editPost.html", text=text)
     elif request.method == "POST":
         db = conn.cursor()
@@ -199,7 +199,8 @@ def editPost():
         app.logger.info("{}, {}".format(int(sanitize_t(net[0])), session["user_id"]))
         if int(sanitize_t(net[0])) != session["user_id"]:
             return apology("You fell victim to one of the classic blunders!", 14)
-        db.execute("""UPDATE posts SET body=? WHERE id=?""", [request.form.get("entry"), sanitize(param)])
+        exe = """UPDATE posts SET body={} WHERE id={}""".format(sanitize(request.form.get("entry")), sanitize(param))
+        db.execute(exe)
         conn.commit()
         return redirect(url_for("index"))
 
@@ -227,6 +228,32 @@ def new_entry(sort):
             post_id = str(uuid.uuid4())                                                             # Creates a unique id
             name = str(request.form.get("name"))
             #app.logger.info('isanon' in dict(request.form).get('opt'))
+            a_files = request.files.getlist('file')
+            app.logger.info(a_files)
+            try:                                                            # First try block to handle no added files
+                a_files = request.files.getlist('file')
+                files = []                                                  # Init list to hold html for files
+
+                if a_files:                                                 # If files have been added
+                    for file in a_files:
+                        filename = file.filename
+                        file.save(filename)
+                        image = client.upload_from_path(filename)
+                        post_id = str(uuid.uuid4())
+                        imghtml = str("<img src='" + str(image["link"]) + "' id='indeximg' alt='libtards I stg'>")
+                        files.append(imghtml)
+                        os.remove(file.filename)
+
+                    if "!i!" in text:                                       # If user has used correct formatting to add files
+                        for file in files:
+                            text = text.replace("!i!", file, 1)
+                    else:                                                   # else just shoehorn them to the end
+                        for file in files:
+                            text = str(text) + " \n" + file
+
+            except:
+                pass
+
             try:
                 if ('isanon' in dict(request.form).get('opt')) == True and ('ishidden' in dict(request.form).get('opt2')) == True:
                     cock = [post_id,
@@ -288,6 +315,7 @@ def new_entry(sort):
         elif str(sort) == "img":
             pass
             file = request.files['file']
+            app.logger.info(file)
             if file:
                 filename = file.filename
                 file.save(filename)
@@ -362,8 +390,21 @@ def prefs():
         info = db.execute("""SELECT * FROM users WHERE id=?""", [session["user_id"]]).fetchall()
         return render_template("prefs.html", info=info)
     elif request.method == "POST":
-        if request.form.get("delete"):
+        if request.form["delete"]:
             db.execute("""DELETE FROM users WHERE id=?""", [session["user_id"]])
+            return redirect(url_for('index'))
+
+        elif request.form["cpassword"]:
+            opassword = pwd_context.hash(request.form.get("opassword"))
+            npassword = pwd_context.hash(request.form.get("npassword"))
+
+            if db.execute("SELECT hash FROM users WHERE id=?", [session["user_id"]]).fetchall()[0][0] == opassword:
+                db.execute("UPDATE users SET hash=? WHERE id=?", [npassword])
+                conn.commit()
+                return redirect(url_for("prefs"))
+            else:
+                return apology("Enter your old password libtard", 80085)
+
 
 
 
@@ -374,17 +415,10 @@ def notifs():
     db = conn.cursor()
     if request.method == "GET":
         user = str(request.args.get("user"))
-        if is_impostor(user, session["username"]) == True:
-            return apology("Fuck off", 80)
-        notifs = db.execute("SELECT * FROM notifs WHERE username=? and read != 1", [user]).fetchall()
-
-        return render_template("notifs.html", notifs=notifs[::-1])
+        notifs = db.execute("SELECT * FROM notifs WHERE username=? AND read=0", [user]).fetchall()
+        return render_template("notifs.html", notifs=notifs)
     elif request.method == "POST":
-        app.logger.info(dict(request.form).get('opt'))
-        for notif in dict(request.form).get('opt'):
-            db.execute("UPDATE notifs SET read=1 WHERE id=?", [notif])
-        conn.commit()
-        return redirect(url_for("index"))
+        pass
 
 
 
@@ -426,12 +460,16 @@ def edit():
     elif request.method == "POST":
         db = conn.cursor()
         new_bio = str(request.form.get("bio"))
-        file = request.files['file']
-        if file:
-            filename = file.filename
-            file.save(filename)
-            image = client.upload_from_path(filename)
-        db.execute("UPDATE users SET bio=?, pfp=? WHERE id=?", [new_bio, image["link"], session["user_id"]])
+        try:
+            file = request.files['file']
+            if file:
+                filename = file.filename
+                file.save(filename)
+                image = client.upload_from_path(filename)
+
+            db.execute("UPDATE users SET bio=?, pfp=? WHERE id=?", [new_bio, image["link"], session["user_id"]])
+        except:
+            db.execute("UPDATE users SET bio=? WHERE id=?", [new_bio, session["user_id"]])
 
         conn.commit()
         return redirect(url_for("index"))
@@ -458,14 +496,11 @@ def sql():
     if request.method == "GET":
         return render_template("sql.html")
     else:
-        sql = request.form.get("sql")
-        if "SELECT" in sql:
-            message = db.execute(sql).fetchall()
+        q = db.execute(request.form.get("sql"))
+        if "SELECT" in request.form.get("sql"):
+            message = db.execute(request.form.get("sql")).fetchall()
         else:
-            message = db.execute(sql)
-        x = conn.set_trace_callback(str)
-        app.logger.info(x)
-        app.logger.info(message)
+            message = db.execute(sanitize(sql))
         return render_template("results.html", message=message)
 
 
@@ -509,48 +544,30 @@ def message():
     global par_from
     global par_to
     global channel_id
-    global messages
     db = conn.cursor()
     if request.method == "GET":
         par_from = request.args.get("from")
         par_to = request.args.get("to")
-        cock = [par_from,
-                par_to,
-                par_from,
-                par_to]
-
-        data = db.execute("""SELECT * FROM messages WHERE channel<>'' AND (from_=? AND to_=?) OR (from_=? AND to_=?)""", cock).fetchall()              # needs to be fixed as the if part will always run
+        data = db.execute("""SELECT * FROM messages WHERE channel<>'' AND (from_={} AND to_={}) OR (from_={} AND to_={})""".format(par_from, par_to, par_from, par_to)).fetchall()              # needs to be fixed as the if part will always run
         if not data:
             channel_id = str(uuid.uuid4())
             #db.execute("""INSERT INTO messages (channel) VALUES (:channelId)""", channelId=channel_id)
             return render_template("message.html")
         else:
-            channel_id = data[0][2]
-            messages = db.execute("""SELECT * FROM messages WHERE channel=?""", [channel_id]).fetchall()
-            messages = dated(messages, 5)
+            channel_id = data[0]["channel"]
+            messages = db.execute("""SELECT * FROM messages WHERE channel=?""", [channel_id])
             return render_template("message.html", messages=messages)
     elif request.method == "POST":
         message = request.form.get("body")
-        cock = [str(uuid.uuid4()),
-                par_to,
-                par_from,
-                message,
-                channel_id,
-                datetime.utcnow()]
         db.execute("""INSERT INTO messages (messageID, to_, from_, body, channel, time) \
-                    VALUES(?, ?, ?, ?, ?, ?)""", cock)
-        messages = db.execute("""SELECT * FROM messages WHERE channel=?""", [channel_id]).fetchall()
-        messages = dated(messages, 5)
-        return render_template("message.html", messages=messages)
-
-@app.route("/friends", methods=["GET", "POST"])
-@login_required
-def friends():
-    db = conn.connect()
-    if request.method == "GET":
-        pass
-
-
+                    VALUES(:id, :to, :from_, :body, :channel, :time)""", \
+                    id=str(uuid.uuid4()), \
+                    to=par_to, \
+                    from_=par_from, \
+                    body=message, \
+                    channel=channel_id, \
+                    time=datetime.utcnow())
+        return redirect(url_for("index"))
 
 
 @app.route("/users", methods=["GET", "POST"])
@@ -667,7 +684,7 @@ def register():
     if request.method == "POST":
         if not request.form.get("email") or not request.form.get("username") or not request.form.get("password") or request.form.get("password") != request.form.get("confirmation"):
             return apology("retry", 400)
-        if len(db.execute("SELECT * FROM users WHERE username = ? LIMIT '1'", [request.form.get("username")]).fetchall()[0]) > 0:
+        if len(db.execute("SELECT * FROM users WHERE username = ? LIMIT '1'", [request.form.get("username")]).fetchall()) > 0:
             return apology("username taken bitch", 696969)
         try:
             welcome(request.form.get("email"), "hoe")
@@ -711,6 +728,89 @@ def history():
         return render_template("history.html")
 
 ################################################################################
+###W      W      W   IIIIIIIIIIIII    K   KKKK    IIIIIIIIIIIIIII              #
+### W     W     W          I          K  K              I                      #
+###  W    W    W           I          K K               I                      #
+###   W   W   W            I          KK                I                      #
+###    W  W  W             I          K K               I                      #
+###     W W W              I          K  K              I                      #
+###      WWW         IIIIIIIIIIIII    K   KKKK    IIIIIIIIIIIIIII              #
+################################################################################
+
+@app.route("/wiki/<folder>", methods=["GET", "POST"])
+@login_required
+@admin_only
+def wiki(folder):
+    db = conn.cursor()
+    global folder2
+    if request.method == "GET":
+        folder2 = folder
+
+        selfinfo = db.execute("SELECT * FROM wiki WHERE selfid=?", [str(folder)]).fetchall()
+        childinfo = db.execute("SELECT * FROM wiki WHERE parentid=?", [str(folder)]).fetchall()
+
+        if selfinfo[0][3] == "folder":
+            #config1 = db.execute("SELECT * FROM wiki WHERE type=? AND parentid=?", ["config", str(folder)]).fetchall()
+            #if not config1:
+                #config = db.execute("SELECT body FROM wiki WHERE name=?", ["default"]).fetchall()[0][5]
+            #else:
+                #config = config1[0][5]
+
+            return render_template("wiki.html", childinfo=childinfo, selfinfo=selfinfo)
+        elif selfinfo[0][3] == "file":
+            return render_template("wfile.html", selfinfo=selfinfo)
+
+
+    else:
+        if request.form.get("add"):
+            if request.form["type"] == "folder":
+                cock = [str(uuid.uuid4()),
+                        folder2,
+                        request.form.get("name"),
+                        "folder",
+                        datetime.utcnow(),
+                        ""]
+                db.execute("INSERT INTO wiki (selfid, parentid, name, type, time, body) VALUES (?, ?, ?, ?, ?, ?)", cock)
+                conn.commit()
+                return redirect(url_for("wiki", folder=folder2))
+            elif request.form["type"] == "file":
+                cock = [str(uuid.uuid4()),
+                        folder2,
+                        request.form.get("name"),
+                        "file",
+                        datetime.utcnow(),
+                        ""]
+                db.execute("INSERT INTO wiki (selfid, parentid, name, type, time, body) VALUES (?, ?, ?, ?, ?, ?)", cock)
+                conn.commit()
+                return redirect(url_for("wiki", folder=folder2))
+        elif request.form.get("edit"):
+            #bypass to the route via link in html
+            pass
+        elif request.form.get("delete"):
+            db.execute("DELETE FROM wiki WHERE selfid=? OR parentid=?", [request.form["delete"], request.form["delete"]])
+            conn.commit()
+            return redirect(url_for("wiki", folder="self"))
+
+
+@app.route("/editWiki", methods=["GET", "POST"])
+@admin_only
+@login_required
+def editWiki():
+    global wizofid
+    db = conn.cursor()
+    if request.method == "GET":
+        wizofid = request.args.get("type")
+        body = db.execute("SELECT body FROM wiki WHERE selfid=?", [wizofid]).fetchall()[0][0]
+        return render_template("editWiki.html", body=body)
+    else:
+        bod = request.form.get("entry")
+        db.execute("""UPDATE wiki SET body=? WHERE selfid=?""", [bod, wizofid])
+        conn.commit()
+        return redirect(url_for("wiki", folder="self"))
+
+
+
+################################################################################
 ###       A            PPPPPPPPPP        IIIIIIIIIIIII                         #
 ###      A A           P         P             I                               #
 ###     A   A          P         P             I                               #
@@ -722,6 +822,7 @@ def history():
 ################################################################################
 
 
+# Users
 @app.route('/api/v1/<user>/info', methods=['GET'])
 def API_get_user(user):
     db = conn.cursor()
@@ -737,6 +838,35 @@ def API_get_posts(user):
     exe = "SELECT * FROM posts WHERE user=?"
     q = db.execute(exe, [user]).fetchall()
     if len(user) == 0:
+        abort(404)
+    return jsonify(q)
+
+# Posts
+@app.route('/api/v1/<post>/info', methods=['GET'])
+def API_get_pinfo(user):
+    db = conn.cursor()
+    exe = "SELECT * FROM posts WHERE post=?"
+    q = db.execute(exe, [post]).fetchall()
+    if len(post) == 0:
+        abort(404)
+    return jsonify(q)
+
+@app.route('/api/v1/<post>/comments', methods=['GET'])
+def API_get_pcomments(user):
+    db = conn.cursor()
+    exe = "SELECT * FROM comments WHERE post_id=?"
+    q = db.execute(exe, [post]).fetchall()
+    if len(post) == 0:
+        abort(404)
+    return jsonify(q)
+
+# Comments
+@app.route('/api/v1/<comment>/info', methods=['GET'])
+def API_get_cinfo(user):
+    db = conn.cursor()
+    exe = "SELECT * FROM comments WHERE comment_id=?"
+    q = db.execute(exe, [comment]).fetchall()
+    if len(comment) == 0:
         abort(404)
     return jsonify(q)
 
@@ -772,5 +902,3 @@ def API_chat_add():
         abort(404)
 
 
-
-# Extra shit

@@ -5,9 +5,13 @@
 
 {% block main %}
     <link href="new_style_entry.css" rel="stylesheet"/>
-    <form action="{{ url_for('new_entry', sort='text') }}" method="post">
+    <form action="{{ url_for('new_entry', sort='text') }}" enctype="multipart/form-data" method="post">
         <fieldset>
-
+            <label for="file" class="custom-file-upload">
+                add an image if you want :)
+            </label>
+            <input id="file" name="file" type="file" multiple=""/>
+            <p>You can add a "!i!" to the text wherever you want an image to go. If you don't use the same number of "!i!"s as the number of images some might not show up and if you don't use them at all the images will show up at the bottom. Add all your files in one go or else it'll fuck everything up.</p>
             <div class="entrybox">
                 <textarea class="textbox" name="entry" style="height:400px;
                                                                 font-family: Verdana, Tahoma, Arial, Helvetica, sans-serif;

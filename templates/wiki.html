@@ -1,0 +1,29 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    down there
+{% endblock %}
+
+{% block main %}
+    <form action="{{url_for('wiki', folder=(selfinfo[0][0]))}}" method="post">
+        <div style= "display: inline-block;">
+            <input class="form-control" name="name" placeholder="new item" type="text"/>
+            <input type="radio" name="type" value="file">  file
+            <input type="radio" name="type" value="folder">  folder
+            <br>
+            <button class="btn btn-default" type="submit" name="add" value="add">add</button>
+        </div>
+    </form>
+    <br>
+    <div style= "display: inline-block;">
+    {% for i in range(childinfo.__len__()) %}
+        <div style= "display: inline-block;">
+        <td><a href="{{url_for('wiki', folder=(childinfo[i][0]))}}">{{ childinfo[i][2] }}</a></td>
+        <!--<form action="{{url_for('wiki', folder=(selfinfo[0][0]))}}" method="post">
+        <button style="color: red;" class="btn btn-default" type="submit" name="delete" value={{  childinfo[i][0]  }}>delete</button>
+        </form>-->
+        <br>
+        <br>
+    {% endfor %}
+    </div>
+{% endblock %}

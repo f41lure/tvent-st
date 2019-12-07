@@ -1,0 +1,13 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    YES BITCH
+{% endblock %}
+
+{% block main %}
+
+    <a href="{{url_for('editWiki', type=selfinfo[0][0])}}" name="editWiki" value="editWiki">edit</a><br>
+    {{  selfinfo[0][5]|markdown  }}
+
+
+{% endblock %}
