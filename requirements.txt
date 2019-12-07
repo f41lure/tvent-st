@@ -1,0 +1,14 @@
+flask
+flask_session
+passlib
+pathlib
+cryptography
+datetime
+vaderSentiment
+flask_debug
+flask_debugtoolbar
+flask_misaka
+flask_moment
+imgurpython
+uuid
+gunicorn
