@@ -1,0 +1,31 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    down there
+{% endblock %}
+
+{% block main %}
+    <h4>a personal clipboard so that you can share files between devices</h4>
+    <form action="{{url_for('clips', func=('yours'))}}" method="post">
+        <div style= "display: inline-block;">
+            <textarea class="textbox" name="text" style="height:120px;
+                                                            font-family: Verdana, Tahoma, Arial, Helvetica, sans-serif;
+                                                            font-size: 82%;
+                                                            overflow:scroll
+                                                            wrap=hard;"></textarea>
+            <button class="btn btn-default" type="submit" name="add" value="add">add</button>
+        </div>
+    </form>
+    <br>
+    <div style= "display: inline-block;">
+    {% for i in range(clips.__len__()) %}
+        <div style= "display: inline-block;">
+        <td><p>{{ clips[i][1] }}</p></td>
+        <form action="{{url_for('clips', func=('yours'))}}" method="post">
+        <button style="color: red;" class="btn btn-default" type="submit" name="delete" value={{  clips[i][0]  }}>delete</button>
+        </form>
+        <br>
+        <br>
+    {% endfor %}
+    </div>
+{% endblock %}

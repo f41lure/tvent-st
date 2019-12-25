@@ -14,7 +14,7 @@
             <td><a href="{{url_for('open_file', type=(posts[i][4]))}}">OP is blind.</a></td>
         {% endif %}
          <br>
-        <h6>{{ (posts[i][3])[0:30] ~ '...' }}</h6>
+        <h6>{{ (posts[i][3]|string)[0:30] ~ '...' }}</h6>
         <br>
         <div class="form-group" autocomplete="off">
                 <input type="checkbox" name="opt" value={{  posts[i][4]  }}>

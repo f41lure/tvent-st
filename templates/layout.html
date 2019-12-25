@@ -3,6 +3,15 @@
 <html lang="en">
 
     <head>
+        <!-- Google Analytics tag -->
+        <script async src="https://www.googletagmanager.com/gtag/js?id=UA-154893816-1"></script>
+        <script>
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+                gtag('js', new Date());
+
+                gtag('config', 'UA-154893816-1');
+        </script>
 
 
         <meta charset="utf-8"/>
@@ -25,6 +34,8 @@
         <script type="text/javascript" src="https://alistapart.github.io/code-samples/alternate/styleswitcher.js"></script>
         <title>8depr: {% block title %}{% endblock %}</title>
 
+
+
     </head>
 
     <style>
@@ -43,9 +54,12 @@
             <div id="content-wrap">
         <nav class="navbar navbar-expand-md  border" id="navshit">
             <a class="navbar-brand" href="/"><span class="yellow">The Realm of</span><span class="red"> 8depr</span><span class="blue"></span></a>
-            <button aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation" class="navbar-toggler" data-target="#navbar" data-toggle="collapse" type="button">
-                <span class="navbar-toggler-icon"></span>
+            <button aria-controls="navba" aria-expanded="false" aria-label="Toggle navigation" class="navbar-toggler" data-target="#navbar" data-toggle="collapse" type="button">
+                <span class="navbar-toggler-icon">
+                    <i class="fas fa-bars" style="color:#fff; font-size:28px;"></i>
+                </span>
             </button>
+
             <div class="collapse navbar-collapse" id="navbar">
                 {% if session.user_id %}
                     <ul class="navbar-nav mr-auto mt-2">
@@ -69,6 +83,7 @@
                         <div class="dropdown-menu dropdown-menu-right animate slideIn" aria-labelledby="navbarDropdown">
                             <a class="dropdown-item" href="/about">info</a>
                             <a class="dropdown-item" href="/history">more info</a>
+                            <a class="dropdown-item" href="/clips/yours">clipboard</a>
                             <div class="dropdown-divider"></div>
                             <a class="dropdown-item" href="#" onclick="setActiveStyleSheet('default'); return false;">Light mode</a>
                             <a class="dropdown-item" href="#" onclick="setActiveStyleSheet('alternate'); return false;">Night mode</a>

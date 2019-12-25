@@ -12,7 +12,7 @@
             height: auto;
         }
     </style>
-
+    <p style="color: red;">development on hold for this weekend!</p>
     <form action="{{ url_for('index') }}" method="post"><div style=" display:flex;">
         <input class="form-control" name="tag" placeholder="Tag (optional)" type="text"/>&nbsp;<button class="btn btn-default" type="submit" name="qtag" value="qtag">search</button>
         </div>
@@ -38,10 +38,10 @@
             <td><a href="{{url_for('open_file', type=(posts[i][4]))}}">OP is blind.</a></td>
         {% endif %}
          <br>
-        {% if (posts[i][3])[1:4] == 'img' %}
-            {{ posts[i][3]|markdown }}
+        {% if ((posts[i][3])|string)[1:4] == 'img' %}
+            {{ (posts[i][3])|markdown }}
         {% else %}
-            <h6>{{ (posts[i][3])[0:30] ~ '...' }}</h6>
+            <h6>{{ (posts[i][3]|string)[0:30] ~ '...' }}</h6>
         {% endif %}
         <br>
         <br>

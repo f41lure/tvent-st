@@ -13,8 +13,9 @@
                                                                 font-family: Verdana, Tahoma, Arial, Helvetica, sans-serif;
                                                                 font-size: 82%;
                                                                 overflow:scroll
-                                                                wrap=hard;">{{text}}</textarea>
+                                                                wrap=hard;">{{text[0][3]}}</textarea>
             </div>
+            <input class="form-control" name="title" value="{{text[0][2]|string}}" type="text"/>
             <div class="form-group">
                 <button class="btn btn-default" type="submit">Save</button>
             </div>
