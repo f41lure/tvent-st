@@ -1,5 +1,6 @@
 # Add prefs
-#
+# Add domains for posts
+# Check stats+admin routes and complete html
 
 from flask import *
 from flask_session import Session
@@ -8,7 +9,7 @@ from tempfile import mkdtemp
 from helpers import *
 from pathlib import Path
 from cryptography.fernet import Fernet
-from datetime import datetime
+from datetime import *
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 from flask_debug import Debug
 from flask_debugtoolbar import DebugToolbarExtension
@@ -24,68 +25,83 @@ import os
 # configure application
 app = Flask(__name__)
 
-# configure session to use filesystem (instead of signed cookies)
+# further app config
 app.config["SESSION_FILE_DIR"] = mkdtemp()
 app.config["SESSION_PERMANENT"] = False
 app.config["SESSION_TYPE"] = "filesystem"
 app.config['SECRET_KEY'] = '8086'
-#app.config['REDIS_URL'] = "redis://:wE3s9IaalB8z8xR15wMqi2LfNkWPIUOV@redis-11944.c16.us-east-1-2.ec2.cloud.redislabs.com:11944"
 app.debug = True
 Session(app)
 Misaka(app)
 moment = Moment(app)
 
-#Imgur config
+# globals
 client = ImgurClient("51e7efef3c2b98e", "a297978f3cb883660cc729ead76f80a2634ceaa2")
-
 conn = sqlite3.connect("/home/8bitRebellion/tvent/tvent3.6/flask-blog/workspace/blog/app.db")
 analyzer = SentimentIntensityAnalyzer()
 global curr_id
 
 @app.route("/", methods=["GET", "POST"])
 def index():
+    db = conn.cursor()
+    global banner
+    try:
+        banner = db.execute("SELECT value FROM stats WHERE thing='banner'").fetchall()[0][0]
+    except:
+        banner = ''
     if request.method == "POST":
         if request.form['qtag']:
-            db = conn.cursor()
             exe = "SELECT * FROM posts WHERE tag={}".format(sanitize(str(request.form.get("tag"))))
 
-            posts = db.execute(exe).fetchall()
             try:
+                exe = """SELECT * FROM users WHERE id = ?"""
+                user_info = db.execute(exe, [session["user_id"]]).fetchall()
+                if user_info[0][7] == "peasant":                                                                        # Show public posts only if user is a pleb
+                    posts = db.execute("""SELECT * FROM posts WHERE domain=? AND tag=? AND ishidden != '1' OR ishidden IS NULL""", ["public", request.form.get("tag")]).fetchall()             # ALSO FIX THIS
+                elif user_info[0][7] == "admin":
+                    posts = db.execute("""SELECT * FROM posts WHERE tag=?""", [request.form.get("tag")]).fetchall()
+
                 curr_user = db.execute(("""SELECT username FROM users WHERE id=?""", [session["user_id"]])).fetchall()[0][0]
                 notifs = db.execute("""SELECT * FROM notifs WHERE user_id=? AND read=?""", [session["user_id"], 0]).fetchall()
 
                 unlonely = 1 if notifs else 0
             except:
+                posts = db.execute("""SELECT * FROM posts WHERE domain=? AND tag=? AND ishidden != '1' OR ishidden IS NULL""", ["public", request.form.get("tag")]).fetchall()
                 curr_user = "anon"
                 unlonely = 0
             conn.commit()
-            return render_template("index.html", posts=posts, user=curr_user, unlonely=unlonely)                  # The link bypasses directly to the actual page
+            return render_template("index.html", posts=posts, user=curr_user,                   # The link bypasses directly to the actual page
+            unlonely=unlonely, banner=banner)
 
     elif request.method == "GET":
-        db = conn.cursor()
-        all_posts = db.execute("""SELECT * FROM posts WHERE ishidden != '1' OR ishidden IS NULL""").fetchall()
-
-        #all_posts = db.execute("""SELECT * FROM posts""").fetchall()
-
-        # data = db.execute("""SELECT * FROM entries WHERE id = :id""", id=session["user_id"])
-        #notifs = db.execute("""SELECT * FROM notifs WHERE user_id=? AND read=?""", [session["user_id"], 0]).fetchall()
-        #unlonely = 1 if len(notifs[0]) != 0 else 0
         if "user_id" in session:
-            exe = """SELECT username FROM users WHERE id = ?"""
-            curr_user = db.execute(exe, [session["user_id"]]).fetchall()[0][0]
+            exe = """SELECT * FROM users WHERE id = ?"""
+            user_info = db.execute(exe, [session["user_id"]]).fetchall()
+            curr_user = user_info[0][1]
             notifs = db.execute("""SELECT * FROM notifs WHERE user_id=? AND read=?""", [session["user_id"], 0]).fetchall()
-
             unlonely = 1 if notifs else 0
+
+            if user_info[0][7] == "peasant":                                                                        # Show public posts only if user is a pleb
+                all_posts = db.execute("""SELECT * FROM posts WHERE domain=? AND ishidden != '1' OR ishidden IS NULL""", ["public"]).fetchall()             # ALSO FIX THIS
+            elif user_info[0][7] == "admin":
+                all_posts = db.execute("""SELECT * FROM posts""").fetchall()
+
         else:
+            all_posts = db.execute("""SELECT * FROM posts WHERE domain=? AND ishidden != '1' OR ishidden IS NULL""", ["public"]).fetchall()           # ACTUALLY FIX THIS
             curr_user = 'anon'
             unlonely = 0
 
         if request.args.get('sort') == "new":
-            return render_template("index.html", posts=list(reversed(list(all_posts))), user=curr_user, unlonely=unlonely)            #TODO FIX THIS
+            return render_template("index.html",
+            posts=list(reversed(list(all_posts))), user=curr_user,
+            unlonely=unlonely, banner=banner)            #TODO FIX THIS
         elif request.args.get('sort') == "old":
-            return render_template("index.html", posts=all_posts, user=curr_user, unlonely=unlonely)
+            return render_template("index.html", posts=all_posts,
+            user=curr_user, unlonely=unlonely, banner=banner)
         else:
-            return render_template("index.html", posts=list(reversed(list(all_posts))), user=curr_user, unlonely=unlonely)
+            return render_template("index.html",
+            posts=list(reversed(list(all_posts))), user=curr_user,
+            unlonely=unlonely, banner=banner)
 
 ######## #### ##       ########    ####  #######
 ##        ##  ##       ##           ##  ##     ##
@@ -232,13 +248,13 @@ def new_entry(sort):
                 files = []                                                  # Init list to hold html for files
 
                 if a_files:                                                 # If files have been added
-                    for file in a_files:
+                    for file in a_files:                                    # Upload each file to imgur
                         filename = file.filename
                         file.save(filename)
                         image = client.upload_from_path(filename)
                         post_id = str(uuid.uuid4())
                         imghtml = str("<img src='" + str(image["link"]) + "' id='indeximg' alt='libtards I stg'>")
-                        files.append(imghtml)
+                        files.append(imghtml)                               # add html for file to list
                         os.remove(file.filename)
 
                     if "!i!" in text:                                       # If user has used correct formatting to add files
@@ -251,8 +267,11 @@ def new_entry(sort):
             except:
                 pass
 
+            app.logger.info(request.form.getlist("opt"))
+            app.logger.info(dict(request.form))
+
             try:
-                if ('isanon' in dict(request.form).get('opt')) == True and ('ishidden' in dict(request.form).get('opt2')) == True:
+                if ('isanon' in dict(request.form).get('opt')) == True and ('ishidden' in dict(request.form).get('opt')) == True:
                     cock = [post_id,
                             user_id,
                             username,
@@ -262,9 +281,10 @@ def new_entry(sort):
                             sentiment,
                             str(request.form.get("tag")),
                             '1',
-                            '1']
-                    db.execute("""INSERT INTO posts (id, user_id, user, title, body, time, sentiment, tag, isanon, ishidden)
-                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""", cock)
+                            '1',
+                            'public']
+                    db.execute("""INSERT INTO posts (id, user_id, user, title, body, time, sentiment, tag, isanon, ishidden, domain)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""", cock)
                 elif ('isanon' in dict(request.form).get('opt')) == True:
                     cock = [post_id,
                             user_id,
@@ -274,12 +294,14 @@ def new_entry(sort):
                             datetime.utcnow(),
                             sentiment,
                             str(request.form.get("tag")),
-                            '1']
-                    db.execute("""INSERT INTO posts (id, user_id, user, title, body, time, sentiment, tag, isanon)
-                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""", cock)
+                            '1',
+                            '0',
+                            'public']
+                    db.execute("""INSERT INTO posts (id, user_id, user, title, body, time, sentiment, tag, isanon, ishidden, domain)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""", cock)
 
 
-                elif ('ishidden' in dict(request.form).get('opt2')) == True:
+                elif ('ishidden' in dict(request.form).get('opt')) == True:
                     cock = [post_id,
                             user_id,
                             username,
@@ -288,9 +310,26 @@ def new_entry(sort):
                             datetime.utcnow(),
                             sentiment,
                             str(request.form.get("tag")),
-                            '1']
-                    db.execute("""INSERT INTO posts (id, user_id, user, title, body, time, sentiment, tag, ishidden)
-                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""", cock)
+                            '1',
+                            '0',
+                            'public']
+                    db.execute("""INSERT INTO posts (id, user_id, user, title, body, time, sentiment, tag, ishidden, isanon, domain)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""", cock)
+
+                elif ('isprivate' in dict(request.form).get('opt')) == True:
+                    cock = [post_id,
+                            user_id,
+                            username,
+                            name,
+                            text,
+                            datetime.utcnow(),
+                            sentiment,
+                            str(request.form.get("tag")),
+                            '0',
+                            '0',
+                            'private']
+                    db.execute("""INSERT INTO posts (id, user_id, user, title, body, time, sentiment, tag, isanon, ishidden, domain)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""", cock)
 
             except:
                 cock = [post_id,
@@ -302,9 +341,10 @@ def new_entry(sort):
                         sentiment,
                         str(request.form.get("tag")),
                         0,
-                        0]
-                db.execute("""INSERT INTO posts (id, user_id, user, title, body, time, sentiment, tag, isanon, ishidden)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""", cock)
+                        0,
+                        "public"]
+                db.execute("""INSERT INTO posts (id, user_id, user, title, body, time, sentiment, tag, isanon, ishidden, domain)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""", cock)
 
             conn.commit()
             return redirect(url_for("index"))
@@ -330,9 +370,10 @@ def new_entry(sort):
                         0.0,
                         request.form.get("tag"),
                         0,
-                        0]
-                db.execute("""INSERT INTO posts (id, user_id, user, title, body, time, sentiment, tag, isanon, ishidden)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""", cock)
+                        0,
+                        public]
+                db.execute("""INSERT INTO posts (id, user_id, user, title, body, time, sentiment, tag, isanon, ishidden, domain)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""", cock)
                 os.remove(file.filename)
             else:
                 pass
@@ -382,13 +423,13 @@ def profile(user):
         your_username = db.execute(exe).fetchall()[0][0]
         # ^ username of the user logged in rn in order to give permissions for editing profile
 
-        exe = """SELECT * FROM posts WHERE user = {}""".format(sanitize(prof_username))
-        app.logger.info(exe)
-        posts = db.execute(exe).fetchall()
+        # Get user posts and post count
+        posts = db.execute("""SELECT * FROM posts WHERE user = ?""", [prof_username]).fetchall()
+        count = len(posts)
+        posts = db.execute("""SELECT * FROM posts WHERE user = ? AND domain = 'public'""", [prof_username]).fetchall()
 
         # get user data
-        exe = """SELECT * FROM users WHERE username = {}""".format(sanitize(prof_username))
-        bioEx = db.execute(exe).fetchall()
+        bioEx = db.execute("""SELECT * FROM users WHERE username = ?""", [prof_username]).fetchall()
         app.logger.info(bioEx)
         bioEx = dated(bioEx, 5)
         try:
@@ -397,8 +438,10 @@ def profile(user):
             pass
         data = bioEx
         bio = str(bioEx[0][4])
-        print(your_username, prof_username)
-        return render_template("profile.html", posts=posts, bio=bio, data=data, username=prof_username, curr_username=your_username)
+
+        return render_template("profile.html", posts=posts, bio=bio, data=data,
+        username=prof_username, curr_username=your_username, count=count)
+
     elif request.method == "POST":
         # return redirect(url_for("edit"))
         pass
@@ -585,8 +628,48 @@ def sql():
 @app.route("/admin", methods=["GET", "POST"])
 @admin_only
 def admin():
+    db = conn.cursor()
     if request.method == "GET":
         return render_template("admin.html")
+    if request.method == "POST":
+        if request.form["setbanr"]:
+            banner = request.form.get("banner")
+            yah = db.execute("SELECT * FROM stats WHERE thing='banner'").fetchall()
+            if len(yah) == 0:
+                db.execute("INSERT INTO stats (thing, value) VALUES ('banner', ?)",
+                [banner])
+                conn.commit()
+            else:
+                db.execute("UPDATE stats SET value=? WHERE thing='banner'",
+                [banner])
+                conn.commit()
+            return redirect(url_for("index"))
+        elif request.form["hplus"]:
+            needtoshit = request.form.get("house")
+            yah = db.execute("SELECT * FROM stats WHERE thing='movedHouse'").fetchall()
+            if len(yah) == 0:
+                db.execute("INSERT INTO stats (thing, value) VALUES ('movedHouse', ?)",
+                [needtoshit])
+                conn.commit()
+            else:
+                db.execute("UPDATE stats SET value=? WHERE thing='movedHouse'",
+                [needtoshit])
+                conn.commit()
+            return redirect(url_for("index"))
+        elif request.form["splus"]:
+            ppboom = request.form.get("school")
+            yah = db.execute("SELECT * FROM stats WHERE thing='changedSchool'").fetchall()
+            if len(yah) == 0:
+                db.execute("INSERT INTO stats (thing, value) VALUES ('changedSchool', ?)",
+                [ppboom])
+                conn.commit()
+            else:
+                db.execute("UPDATE stats SET value=? WHERE thing='changedSchool'",
+                [ppboom])
+                conn.commit()
+            return redirect(url_for("index"))
+
+
 
 @app.route("/ban", methods=["GET", "POST"])
 @login_required
@@ -617,6 +700,7 @@ def kill():
         return render_template("delete.html")
 
 
+
 #### ##    ## ########  #######
  ##  ###   ## ##       ##     ##
  ##  ####  ## ##       ##     ##
@@ -636,6 +720,48 @@ def users():
         perm = db.execute(exe).fetchall()[0][0]
         return render_template("users.html", users=users, perm=perm)
     elif request.method == "POST":
+        pass
+
+@app.route("/stats", methods=["GET", "POST"])
+def stats():
+    thyAss = conn.cursor()
+    if request.method == "GET":
+        # post count
+        posts = thyAss.execute("SELECT * FROM posts").fetchall()
+        posts = len(posts)
+
+        # wiki entries
+        wiki = thyAss.execute("SELECT * FROM wiki").fetchall()
+        wiki = len(wiki)
+
+        # total subs
+        comms = thyAss.execute("SELECT * FROM comments").fetchall()
+        comms = len(comms)
+        tot = comms + wiki + posts
+
+        # user count
+        users = thyAss.execute("SELECT * FROM users").fetchall()
+        users = len(users)
+
+        # project start date
+        manifest = date(2018, 11, 5)
+        today = datetime.now().date()
+        delta = today - manifest
+        passed = str(delta.days)
+
+        # number of times I've changed house because of course my fam can't
+        # stay in the same place
+        hchange = thyAss.execute("SELECT value FROM stats WHERE thing=?",
+        ['movedHouse']).fetchall()
+
+        # number of times I've changed school because why the fuck not
+        schange = thyAss.execute("SELECT value FROM stats WHERE thing=?",
+        ['changedSchool']).fetchall()
+
+        return render_template("stats.html", posts=posts, wiki=wiki, tot=tot,
+        users=users, passed=passed, house=hchange, school=schange)
+
+    else:
         pass
 
 
@@ -867,7 +993,7 @@ def clips(func):
     if request.method == "GET":
         if str(func) == "yours":
             clips = db.execute("SELECT * FROM clips WHERE userid=?", [session["user_id"]]).fetchall()
-            return render_template("clips.html", clips=clip)
+            return render_template("clips.html", clips=clips)
     elif request.method == "POST":
         if request.form.get("add"):
             text = request.form.get("text")

@@ -1,0 +1,15 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    shtaths
+{% endblock %}
+
+{% block main %}
+    <h3>Site statistics</h3>
+    <br>
+    <h5>registered users: {{users}}</h5>
+    <h5>total posts: {{posts}}</h5>
+    <h5>wiki entries: {{wiki}}</h5>
+    <h5>total submissions: {{tot}}</h5>
+    <h5>days since launch: {{passed}}</h5>
+{% endblock %}

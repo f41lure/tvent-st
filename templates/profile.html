@@ -1,7 +1,7 @@
 {% extends "layout.html" %}
 
 {% block title %}
-    Index
+    thy worth
 {% endblock %}
 
 {% block main %}
@@ -13,6 +13,8 @@
         <a href="{{url_for('message', from=curr_username, to=username)}}">Talk</a>
     {% endif %}
 
+    <h6>post count: {{count}}</h6>
+    <h6>access level: {{data[0][7]}}</h6>
     {% if data[0][6] != None %}
         <h6>last seen {{  moment(data[0][6]).format('MMMM Do YYYY, h:mm:ss a')  }}</h6>
     {% endif %}
@@ -20,14 +22,14 @@
 
     <img src={{data[0][9]}} alt="welp" width=20 style="height: auto; width: 20%;">
     {% if not not bio %}
-        <h6>About:<br>{{ bio }}</h5>
+        <h6>about:<br>{{ bio }}</h6>
     {% else %}
         <h6>This person hasn't made a bio yet</h6>
     {% endif %}
 
 
     <br><br>
-  <h3><pre>This user's posts:
+  <h3><pre>this user's posts:
 </pre></h3>
     {% for i in range(posts.__len__()) %}
         {% if posts[i][2] %}

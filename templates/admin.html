@@ -17,5 +17,13 @@
     <h5><a href="{{ url_for('kill') }}">kill</a></h5>
     <br>
     <h5><a href="{{ url_for('bulk') }}">bulk delete posts</a></h5>
+    <br>
+    <h4>Change banner</h4>
+    <form action="{{ url_for('admin') }}" method="post"><div style=" display:flex;">
+        <input class="form-control" name="banner" placeholder="type fucker type" type="text"/>&nbsp;<button class="btn btn-default" type="submit" name="setbanr" value="setbanr">save</button>
+        </div>
+    </form>
+    <br>
+    <h5><a href="{{ url_for('sql') }}">execute sql</a></h5>
 
 {% endblock %}
