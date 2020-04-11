@@ -138,5 +138,8 @@ def dated(tupe, idx):
     tupe = deeplist(tupe)
     for i in range(0, len(tupe)): #converts to list and changes all dates to datetime, do the same with the get request
         #tupe[i][idx] = tupe[i][idx].replace(microsecond=0)
-        tupe[i][idx] = datetime.strptime(tupe[i][idx], '%Y-%m-%d %H:%M:%S.%f')
+        try:
+            tupe[i][idx] = datetime.strptime(tupe[i][idx], '%Y-%m-%d %H:%M:%S.%f')
+        except:
+            tupe[i][idx] = datetime.strptime("2019-11-09 00:06:04.164378", '%Y-%m-%d %H:%M:%S.%f')
     return tupe

@@ -57,29 +57,37 @@ def index():
                 exe = """SELECT * FROM users WHERE id = ?"""
                 user_info = db.execute(exe, [session["user_id"]]).fetchall()
                 if user_info[0][7] == "peasant":                                                                        # Show public posts only if user is a pleb
-                    posts = db.execute("""SELECT * FROM posts WHERE domain=? AND tag=? AND ishidden != '1' OR ishidden IS NULL""", ["public", request.form.get("tag")]).fetchall()             # ALSO FIX THIS
+                    posts = db.execute("""SELECT * FROM posts WHERE domain=? AND tag=? AND (ishidden != '1' OR ishidden IS NULL)""", ["public", request.form.get("tag")]).fetchall()             # ALSO FIX THIS
                 elif user_info[0][7] == "admin":
                     posts = db.execute("""SELECT * FROM posts WHERE tag=?""", [request.form.get("tag")]).fetchall()
 
-                curr_user = db.execute(("""SELECT username FROM users WHERE id=?""", [session["user_id"]])).fetchall()[0][0]
+                curr_user = db.execute("""SELECT username FROM users WHERE id=?""", [session["user_id"]]).fetchall()[0][0]
                 notifs = db.execute("""SELECT * FROM notifs WHERE user_id=? AND read=?""", [session["user_id"], 0]).fetchall()
 
                 unlonely = 1 if notifs else 0
+
+
             except:
-                posts = db.execute("""SELECT * FROM posts WHERE domain=? AND tag=? AND ishidden != '1' OR ishidden IS NULL""", ["public", request.form.get("tag")]).fetchall()
+                posts = db.execute("""SELECT * FROM posts WHERE domain=? AND tag=? AND (ishidden != '1' OR ishidden IS NULL)""", ["public", request.form.get("tag")]).fetchall()
                 curr_user = "anon"
                 unlonely = 0
+
+
             conn.commit()
             return render_template("index.html", posts=posts, user=curr_user,                   # The link bypasses directly to the actual page
             unlonely=unlonely, banner=banner)
 
     elif request.method == "GET":
+        app.logger.info(request.headers['X-Real-IP'])
         if "user_id" in session:
             exe = """SELECT * FROM users WHERE id = ?"""
             user_info = db.execute(exe, [session["user_id"]]).fetchall()
             curr_user = user_info[0][1]
             notifs = db.execute("""SELECT * FROM notifs WHERE user_id=? AND read=?""", [session["user_id"], 0]).fetchall()
             unlonely = 1 if notifs else 0
+
+            last_ip = str(request.headers['X-Real-IP'])
+            db.execute("UPDATE users SET ip=? WHERE id=?", [last_ip, session["user_id"]])
 
             if user_info[0][7] == "peasant":                                                                        # Show public posts only if user is a pleb
                 all_posts = db.execute("""SELECT * FROM posts WHERE domain=? AND ishidden != '1' OR ishidden IS NULL""", ["public"]).fetchall()             # ALSO FIX THIS
@@ -90,6 +98,8 @@ def index():
             all_posts = db.execute("""SELECT * FROM posts WHERE domain=? AND ishidden != '1' OR ishidden IS NULL""", ["public"]).fetchall()           # ACTUALLY FIX THIS
             curr_user = 'anon'
             unlonely = 0
+
+        conn.commit()
 
         if request.args.get('sort') == "new":
             return render_template("index.html",
@@ -371,7 +381,7 @@ def new_entry(sort):
                         request.form.get("tag"),
                         0,
                         0,
-                        public]
+                        "public"]
                 db.execute("""INSERT INTO posts (id, user_id, user, title, body, time, sentiment, tag, isanon, ishidden, domain)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""", cock)
                 os.remove(file.filename)
@@ -559,29 +569,53 @@ def message():
     global par_from
     global par_to
     global channel_id
+    global from_id
+    global to_id
     db = conn.cursor()
     if request.method == "GET":
         par_from = request.args.get("from")
         par_to = request.args.get("to")
-        data = db.execute("""SELECT * FROM messages WHERE channel<>'' AND (from_={} AND to_={}) OR (from_={} AND to_={})""".format(par_from, par_to, par_from, par_to)).fetchall()              # needs to be fixed as the if part will always run
+        from_id = db.execute("SELECT id FROM users WHERE username=?", [par_from]).fetchall()[0][0]
+        to_id = db.execute("SELECT id FROM users WHERE username=?", [par_to]).fetchall()[0][0]
+
+        app.logger.info(str("from_id:" + str(from_id) + "user id:" + str(session["user_id"])))
+        if session["user_id"] != from_id:
+            return apology("fuck off", 8008135)
+
+        data = db.execute("""SELECT * FROM messages WHERE channel<>'' AND ((from_=? AND to_=?) OR (from_=? AND to_=?))""", [par_from, par_to, par_from, par_to]).fetchall()              # needs to be fixed as the if part will always run
         if not data:
             channel_id = str(uuid.uuid4())
-            #db.execute("""INSERT INTO messages (channel) VALUES (:channelId)""", channelId=channel_id)
+
+            db.execute("""INSERT INTO messages (channel) VALUES (?)""", [channel_id])
+            conn.commit()
+
             return render_template("message.html")
         else:
-            channel_id = data[0]["channel"]
-            messages = db.execute("""SELECT * FROM messages WHERE channel=?""", [channel_id])
-            return render_template("message.html", messages=messages)
+            channel_id = data[0][2]
+            messages = db.execute("""SELECT * FROM messages WHERE channel=?""", [channel_id]).fetchall()
+            conn.commit()
+
+            messages = dated(messages, 5)
+            return render_template("message.html", messages=reversed(messages))
     elif request.method == "POST":
-        message = request.form.get("body")
+        message = str(request.form.get("body"))
         db.execute("""INSERT INTO messages (messageID, to_, from_, body, channel, time) \
-                    VALUES(:id, :to, :from_, :body, :channel, :time)""", \
-                    id=str(uuid.uuid4()), \
-                    to=par_to, \
-                    from_=par_from, \
-                    body=message, \
-                    channel=channel_id, \
-                    time=datetime.utcnow())
+                    VALUES(?, ?, ?, ?, ?, ?)""",
+                    [str(uuid.uuid4()),
+                    par_to,
+                    par_from,
+                    message,
+                    channel_id,
+                    datetime.utcnow()])
+
+        dump = db.execute("""SELECT messages FROM users WHERE id=?""", [from_id]).fetchall()[0][0]
+        dump = dump.split(",")
+        dump.remove(from_id)
+        dump = ','.join(dump)
+        dump += str(',' + str(to_id))
+        db.execute("""UPDATE users SET messages=? WHERE id=?""", [dump, from_id])
+
+        conn.commit()
         return redirect(url_for("index"))
 
 
@@ -871,10 +905,10 @@ def register():
             return apology("retry", 400)
         if len(db.execute("SELECT * FROM users WHERE username = ? LIMIT '1'", [request.form.get("username")]).fetchall()) > 0:
             return apology("username taken bitch", 696969)
-        try:
-            welcome(request.form.get("email"), "hoe")
-        except:
-            return apology("Enter an actual email address ya hoe", 69)
+
+        welcome(request.form.get("email"), "hoe")
+        #except:
+            #return apology("Enter an actual email address ya hoe", 69)
 
         str = "INSERT INTO users (username, hash, email, created, perms, isbanned) VALUES({}, {}, {}, {}, {}, {})".format(\
                              sanitize(request.form.get("username")), \
@@ -1092,5 +1126,4 @@ def API_chat_add():
         conn.commit()
     except:
         abort(404)
-
 
