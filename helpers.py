@@ -11,8 +11,8 @@ from datetime import datetime
 
 port = 465  # For SSL
 smtp_server = "smtp.gmail.com"
-sender_email = "8depr69@gmail.com"  # Enter your address
-password = "porsche911gt3rs4.0"
+sender_email = "8depr69@gmail.com"  
+password = ""
 
 conn = sqlite3.connect("/home/8bitRebellion/tvent/tvent3.6/flask-blog/workspace/blog/app.db")
 
